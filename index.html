@@ -1,0 +1,118 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><meta name="theme-color" content="#101c2f"><title>Ridge Rush 0.4</title><style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden}body{font:600 14px system-ui,-apple-system,Segoe UI,sans-serif;background:#122339;color:white;user-select:none;-webkit-user-select:none;touch-action:none}canvas{display:block;width:100%;height:100%;touch-action:none}button{font:inherit;background:#223951;color:#fff;border:1px solid #ffffff36;border-radius:12px;padding:11px 13px;cursor:pointer;touch-action:none}button:active,.held{background:#ffad51!important;color:#152637!important}.primary{background:#ffac4d;color:#152637;border:0;font-weight:900;padding:15px 24px}#hud{position:fixed;top:10px;left:10px;right:10px;display:flex;justify-content:space-between;gap:7px;pointer-events:none}#hud>div{background:#12243cce;border:1px solid #ffffff25;padding:8px 12px;border-radius:11px;min-width:72px}small{color:#b5c9dd;font-size:10px;letter-spacing:.06em}strong{display:block;font-size:18px;font-variant-numeric:tabular-nums}#topbuttons{position:fixed;top:73px;right:10px;display:flex;gap:7px}#topbuttons button{padding:9px 12px;background:#1d344fda}#progress{position:fixed;top:68px;left:10px;right:10px;height:4px;border-radius:6px;background:#ffffff26;overflow:hidden}#bar{height:100%;background:#ffac4d;width:0%}#controls{position:fixed;bottom:16px;left:12px;right:12px;display:flex;justify-content:space-between;gap:6px;pointer-events:none}.cluster{display:flex;gap:8px;pointer-events:auto}.control{width:clamp(59px,16vw,90px);height:clamp(63px,12vh,82px);background:#142c46d9;border:2px solid #ffffff5a;font-size:26px;padding:4px}.control span{display:block;font-size:10px;letter-spacing:.02em}#overlay{position:fixed;inset:0;background:#09172cb8;display:grid;place-items:center;padding:14px;backdrop-filter:blur(5px)}#overlay[hidden]{display:none}#panel{width:min(530px,96vw);max-height:91dvh;overflow-y:auto;background:#15283feb;border:1px solid #ffffff35;border-radius:20px;text-align:center;padding:22px;box-shadow:0 25px 80px #0009}h1{margin:0 0 8px;font-size:clamp(25px,6vw,38px)}p{color:#c6d8e9;line-height:1.45;margin:10px 0 17px}#levels{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin:16px 0}#levels button{padding:10px 0 7px;min-width:0;border:1px solid #7b92a47a}#levels button.selected{background:#ffac4d;color:#142337}#levels button small{display:block;font-size:11px;color:inherit}#overlaybuttons{display:flex;justify-content:center;gap:9px;flex-wrap:wrap}#tip{margin-top:12px;color:#aac4dd;font-size:12px}#toast{position:fixed;top:130px;left:50%;transform:translateX(-50%);padding:8px 15px;border-radius:12px;background:#13273cdd;color:#ffcf8c;pointer-events:none;opacity:0;transition:opacity .2s;white-space:nowrap}#toast.show{opacity:1}@media(max-width:560px){#hud>div{padding:7px 8px;min-width:0}strong{font-size:15px}#topbuttons{top:70px}#panel{padding:18px 15px}.control{height:66px}#controls{bottom:10px;left:7px;right:7px}.cluster{gap:5px}#levels{gap:4px}#levels button{font-size:13px}}@media(hover:hover) and (pointer:fine){#controls{opacity:.45}}
+</style></head><body>
+<canvas id="game"></canvas>
+<div id="hud"><div><small>УРОВЕНЬ</small><strong id="levelhud">1 / 5</strong></div><div><small>ВРЕМЯ</small><strong id="time">00:00.0</strong></div><div><small>РЕКОРД</small><strong id="best">—</strong></div><div><small>СКОРОСТЬ</small><strong id="speed">0</strong></div></div>
+<div id="progress"><div id="bar"></div></div>
+<div id="topbuttons"><button id="menu">☰ Уровни</button><button id="reset">↻ Заново</button></div>
+<div id="controls"><div class="cluster"><button class="control" data-key="back">↶<span>НАЗАД</span></button><button class="control" data-key="forward">↷<span>ВПЕРЁД</span></button></div><div class="cluster"><button class="control" data-key="brake">◀<span>ТОРМОЗ</span></button><button class="control" data-key="gas">▶<span>ГАЗ</span></button></div></div>
+<div id="toast">Контроль баланса!</div>
+<div id="overlay"><div id="panel"><h1 id="headline">🏍️ RIDGE RUSH 0.4</h1><p id="message">Пять разных испытаний: короткие техничные и длинные на выносливость. Газ не спасёт без баланса.</p><div id="levels"></div><div id="overlaybuttons"><button class="primary" id="start">ПОЕХАЛИ!</button><button id="next" hidden>Следующая трасса →</button></div><div id="tip">ПК: ← → газ/тормоз, ↑ ↓ наклон, R — моментальный рестарт, Esc — меню</div></div></div>
+<script>
+(()=>{'use strict';
+const $=s=>document.getElementById(s),canvas=$('game'),ctx=canvas.getContext('2d'),keys={gas:false,brake:false,back:false,forward:false},keymap={ArrowRight:'gas',KeyD:'gas',ArrowLeft:'brake',KeyA:'brake',ArrowUp:'back',KeyW:'back',ArrowDown:'forward',KeyS:'forward'};
+// The gaps between consecutive track segments are real holes. No external assets or dependencies.
+// Hand-designed routes. Long stages alternate hills, flats and small jumps.
+const levels=[
+ {name:'Короткий ад',tag:'короткая · сложная',stars:[22,38],segments:[[[0,400],[140,400],[230,345],[310,305],[350,410],[420,445],[500,335]],[[555,405],[625,410],[690,300],[755,320],[820,435],[945,390]]]},
+ {name:'Марафон',tag:'длинная · спокойная',stars:[95,135],segments:[[[0,400],[220,400],[420,350],[620,395],[820,335],[1050,405],[1270,360],[1500,390],[1710,340],[1960,395],[2200,365],[2400,380],[2700,390],[3000,360],[3260,400],[3520,370],[3820,385]]]},
+ {name:'Прыжки',tag:'средняя · средняя',stars:[45,70],segments:[[[0,400],[175,400],[330,350],[440,385],[510,390]],[[560,430],[720,390],[870,355],[940,380]],[[1000,430],[1150,405],[1270,325],[1380,400],[1530,390],[1720,400]]]},
+ {name:'Точность',tag:'короткая · экстремальная',stars:[32,55],segments:[[[0,400],[155,400],[250,290],[300,300],[360,445],[450,390]],[[505,425],[565,425],[645,315],[705,310]],[[758,455],[835,435],[925,330],[1000,350],[1110,420],[1300,390]]]},
+ {name:'Большой рейд',tag:'длинная · тяжёлая',stars:[120,180],segments:[[[0,400],[160,400],[290,315],[370,320],[465,420],[590,380],[700,300],[790,345]],[[845,420],[980,390],[1090,320],[1170,325],[1260,445],[1410,405],[1530,355],[1660,380]],[[1715,430],[1830,410],[1930,315],[2020,325],[2140,440],[2280,390],[2400,305],[2490,365]],[[2548,435],[2670,425],[2820,340],[2940,390],[3070,315],[3170,390],[3300,430],[3450,360],[3580,385],[3760,390]]]} 
+];
+levels.forEach(l=>{l.finish=l.segments[l.segments.length-1].at(-1)[0]-35;l.start=85});
+const R=16,HALF=30,AXLE=14,G=1020,DRIVE=235,BRAKE=540,MAX=245,SPAWN=85;
+let W=0,H=0,dpr=1,zoom=1,cameraX=0,cameraY=0,selected=0,playing=false,elapsed=0,last=0,particles=[],completed=false,best=[],unlocked=0,toastTime=0;
+function readData(){try{const obj=JSON.parse(localStorage.getItem('ridgeRush04')||'{}');best=Array.isArray(obj.best)?obj.best.slice(0,5):[];unlocked=4}catch(_){best=[];unlocked=4}}
+function save(){try{localStorage.setItem('ridgeRush04',JSON.stringify({best,unlocked}))}catch(_){}}
+readData();
+const bike={x:SPAWN,y:340,vx:0,vy:0,a:0,av:0,grounded:false,airtime:0,lastGroundAngle:0};
+function format(t){const m=Math.floor(t/60),s=Math.floor(t%60),d=Math.floor(t%1*10);return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${d}`}
+function resize(){W=innerWidth;H=innerHeight;dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(W*dpr);canvas.height=Math.round(H*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);zoom=Math.min(1.18,Math.max(.61,W/950))}addEventListener('resize',resize);resize();
+function height(x){for(const seg of levels[selected].segments){if(x<seg[0][0]||x>seg[seg.length-1][0])continue;let i=0;while(i<seg.length-2&&x>seg[i+1][0])i++;const a=seg[i],b=seg[i+1],t=Math.max(0,Math.min(1,(x-a[0])/(b[0]-a[0])));return a[1]+(b[1]-a[1])*(t*t*(3-2*t));}return null}
+function slope(x){const a=height(x-3),b=height(x+3);return a===null||b===null?0:(b-a)/6}
+function wheel(local){return {x:bike.x+local*Math.cos(bike.a)-AXLE*Math.sin(bike.a),y:bike.y+local*Math.sin(bike.a)+AXLE*Math.cos(bike.a),local}}
+function clearKeys(){Object.keys(keys).forEach(k=>keys[k]=false);document.querySelectorAll('[data-key]').forEach(b=>b.classList.remove('held'))}
+function choose(n){selected=n;showMenu()}
+function drawLevelButtons(){const holder=$('levels');holder.replaceChildren();levels.forEach((l,i)=>{const b=document.createElement('button');b.className=i===selected?'selected':'';b.innerHTML=`${i+1}<small>${best[i]?'★ '+format(best[i]):'—'}</small>`;b.title=l.name+' — '+l.tag;b.disabled=false;b.onclick=()=>choose(i);holder.appendChild(b)})}
+function showMenu(){playing=false;clearKeys();$('overlay').hidden=false;$('headline').textContent='🏍️ RIDGE RUSH 0.4';$('message').textContent=`Трасса ${selected+1}: «${levels[selected].name}» — ${levels[selected].tag}, ${Math.round(levels[selected].finish)} м. Контролируй наклон при подъёмах и посадке.`;$('start').textContent='ПОЕХАЛИ!';$('next').hidden=true;drawLevelButtons()}
+function restart(){const y=height(SPAWN)??400;Object.assign(bike,{x:SPAWN,y:y-70,vx:0,vy:0,a:0,av:0,grounded:false,airtime:0,lastGroundAngle:0});particles=[];elapsed=0;playing=true;completed=false;clearKeys();$('overlay').hidden=true;cameraX=bike.x-W*.28/zoom;cameraY=bike.y-H*.52/zoom}
+function end(win){if(!playing)return;playing=false;completed=win;clearKeys();$('overlay').hidden=false;const l=levels[selected];if(win){const record=!best[selected]||elapsed<best[selected];if(record)best[selected]=elapsed;unlocked=Math.max(unlocked,Math.min(4,selected+1));save();$('headline').textContent='🏁 ФИНИШ!';const stars=elapsed<=l.stars[0]?3:elapsed<=l.stars[1]?2:1;$('message').textContent=`${'⭐'.repeat(stars)} Время: ${format(elapsed)}. ${record?'Новый рекорд!':'Рекорд: '+format(best[selected])}.`;$('start').textContent='УЛУЧШИТЬ ВРЕМЯ';$('next').hidden=selected===4;}else{$('headline').textContent='💥 ПАДЕНИЕ';$('message').textContent=`Трасса «${l.name}». До финиша ${Math.round(Math.max(0,l.finish-bike.x))} м. Нажми R или кнопку ниже — новая попытка сразу.`;$('start').textContent='ЕЩЁ ПОПЫТКА';$('next').hidden=true;}drawLevelButtons()}
+function next(){if(selected<4){selected++;restart()}}
+function update(dt){
+ if(!playing)return;
+ elapsed+=dt;const b=bike;
+ const ws=[wheel(-HALF),wheel(HALF)];
+ const support=[];
+ for(const w of ws){const h=height(w.x);if(h===null)continue;const pen=w.y+R-h;
+   if(pen>-7&&pen<29&&b.vy>-210)support.push({w,pen,h});}
+ const wasGrounded=b.grounded;
+ b.grounded=support.length>0;
+ if(b.grounded){
+   const avg=support.reduce((sum,s)=>sum+slope(s.w.x),0)/support.length;
+   const terrain=Math.atan(avg);
+   // Suspension is deliberately weak: holding throttle never auto-levels the bike.
+   const delta=Math.atan2(Math.sin(terrain-b.a),Math.cos(terrain-b.a));
+   b.av+=(delta*1.55-b.av*1.15)*dt;
+   const grip=Math.max(.38,1-Math.abs(avg)*.25);
+   if(keys.gas){b.vx+=DRIVE*grip*dt;b.av-=0.85*dt;}
+   if(keys.brake){b.vx-=Math.sign(b.vx||1)*Math.min(Math.abs(b.vx),BRAKE*dt);b.av+=.2*dt;}
+   b.vx+=Math.sin(terrain)*125*dt;
+   b.vx-=b.vx*.23*dt;
+   if(keys.back)b.av-=6.3*dt;
+   if(keys.forward)b.av+=6.3*dt;
+   b.lastGroundAngle=terrain;
+   b.airtime=0;
+   // Both wheels must cooperate; the frame is not pinned to ground automatically.
+   const proposed=Math.min(...support.map(s=>s.h-R-(s.w.local*Math.sin(b.a)+AXLE*Math.cos(b.a))));
+   if(b.y>proposed){b.y=proposed;b.vy=Math.min(0,b.vy);}
+   if(support.length===1&&Math.abs(b.a-terrain)>.75){b.av+=Math.sign(b.a-terrain)*1.6*dt;}
+ }else{
+   b.airtime+=dt;b.vy+=G*dt;b.vx-=b.vx*.045*dt;
+   if(keys.back)b.av-=9*dt;
+   if(keys.forward)b.av+=9*dt;
+   b.av*=Math.max(.90,1-.18*dt);
+ }
+ b.vx=Math.max(-75,Math.min(MAX,b.vx));b.av=Math.max(-5.5,Math.min(5.5,b.av));
+ b.x+=b.vx*dt;b.y+=b.vy*dt;b.a+=b.av*dt;
+ const ws2=[wheel(-HALF),wheel(HALF)];
+ let maxPen=0,touched=0;
+ for(const w of ws2){const h=height(w.x);if(h!==null){const pen=w.y+R-h;if(pen>0){maxPen=Math.max(maxPen,pen);touched++;}}}
+ if(maxPen>0&&b.vy>=-210){
+   // Crash when landing sideways or upside-down, or after a violent fall.
+   const angle=Math.atan(slope(b.x));
+   const diff=Math.abs(Math.atan2(Math.sin(b.a-angle),Math.cos(b.a-angle)));
+   if((!wasGrounded&&diff>.63&&Math.abs(b.vy)>110)||(!wasGrounded&&b.vy>620)||maxPen>65){end(false);return;}
+   b.y-=Math.min(30,maxPen);b.vy=Math.min(0,b.vy);
+ }
+ // Helmet collision also catches slow-motion flips on steep climbs.
+ const hx=b.x+35*Math.sin(b.a)-8*Math.cos(b.a),hy=b.y-35*Math.cos(b.a)-8*Math.sin(b.a);
+ const hh=height(hx);
+ if((hh!==null&&hy+10>hh-4)||b.y>900){end(false);return;}
+ if(b.x>=levels[selected].finish){end(true);return;}
+ if(b.x<35){b.x=35;b.vx=Math.max(0,b.vx);}
+ if(keys.gas&&b.grounded&&Math.random()<.22){const w=ws2[0],h=height(w.x);if(h!==null)particles.push({x:w.x,y:h,vx:-25-Math.random()*35,vy:-45,age:0});}
+ particles=particles.filter(p=>(p.age+=dt)<.6);
+ for(const p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=430*dt;}
+}
+function render(){ctx.clearRect(0,0,W,H);ctx.fillStyle='#92c9ef';ctx.fillRect(0,0,W,H);
+ cameraX+=(bike.x-W*.28/zoom-cameraX)*.085;cameraY+=(bike.y-H*.49/zoom-cameraY)*.07;
+ ctx.save();ctx.scale(zoom,zoom);ctx.translate(-cameraX,-cameraY);const left=cameraX-150,right=cameraX+W/zoom+150;
+ // Mountains and clouds
+ for(let i=0;i<18;i++){const x=i*280+100,y=75+Math.sin(i*1.8)*37;ctx.fillStyle='#ffffffa8';ctx.beginPath();ctx.ellipse(x,y,65,15,0,0,Math.PI*2);ctx.fill()}
+ ctx.fillStyle='#77adc3';ctx.beginPath();ctx.moveTo(left,900);for(let x=left;x<=right+30;x+=20)ctx.lineTo(x,235+32*Math.sin(x*.004)+15*Math.cos(x*.012));ctx.lineTo(right,900);ctx.closePath();ctx.fill();
+ // Draw each solid island independently; gaps remain empty.
+ for(const seg of levels[selected].segments){const low=Math.max(left,seg[0][0]),high=Math.min(right,seg[seg.length-1][0]);if(low>high)continue;ctx.beginPath();ctx.moveTo(low,940);ctx.lineTo(low,height(low));for(let x=low+4;x<high;x+=4)ctx.lineTo(x,height(x));ctx.lineTo(high,height(high));ctx.lineTo(high,940);ctx.closePath();ctx.fillStyle='#365b46';ctx.fill();ctx.beginPath();ctx.moveTo(low,height(low));for(let x=low+4;x<high;x+=4)ctx.lineTo(x,height(x));ctx.lineTo(high,height(high));ctx.lineWidth=8;ctx.lineJoin='round';ctx.strokeStyle='#a1ca71';ctx.stroke();for(let x=Math.ceil(low/30)*30;x<high;x+=30){ctx.fillStyle='#527957';ctx.fillRect(x,(height(x)??420)+19,8,3)}}
+ function flag(x,finish){const h=height(x);if(h===null)return;ctx.strokeStyle='#f6f8fa';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(x,h);ctx.lineTo(x,h-95);ctx.stroke();ctx.fillStyle=finish?'#ffc45c':'#254b68';ctx.fillRect(x,h-95,65,27);ctx.fillStyle=finish?'#1b2e42':'#fff';ctx.font='bold 13px system-ui';ctx.fillText(finish?'FINISH':'START',x+5,h-76)}flag(45,false);flag(levels[selected].finish,true);
+ for(const p of particles){ctx.globalAlpha=1-p.age/.6;ctx.fillStyle='#ffe5b5';ctx.fillRect(p.x,p.y,5,5)}ctx.globalAlpha=1;
+ ctx.save();ctx.translate(bike.x,bike.y);ctx.rotate(bike.a);
+ function tire(x){ctx.fillStyle='#1b2230';ctx.beginPath();ctx.arc(x,AXLE,R,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#e3eaf1';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,AXLE,10,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#9daeb8';ctx.beginPath();ctx.arc(x,AXLE,4,0,Math.PI*2);ctx.fill()}
+ tire(-HALF);tire(HALF);ctx.strokeStyle='#f07838';ctx.lineWidth=6;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(-HALF,AXLE);ctx.lineTo(-5,-8);ctx.lineTo(13,AXLE);ctx.lineTo(-HALF,AXLE);ctx.lineTo(30,-10);ctx.stroke();ctx.strokeStyle='#263344';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(27,-11);ctx.lineTo(38,-15);ctx.moveTo(-13,-14);ctx.lineTo(3,-14);ctx.stroke();ctx.strokeStyle='#2b3948';ctx.lineWidth=8;ctx.beginPath();ctx.moveTo(-9,-28);ctx.lineTo(-17,-18);ctx.lineTo(-4,1);ctx.moveTo(-14,-20);ctx.lineTo(10,-9);ctx.lineTo(29,-13);ctx.stroke();ctx.strokeStyle='#e95545';ctx.lineWidth=12;ctx.beginPath();ctx.moveTo(-9,-43);ctx.lineTo(-9,-28);ctx.stroke();ctx.fillStyle='#edc19b';ctx.beginPath();ctx.arc(-8,-51,10,0,2*Math.PI);ctx.fill();ctx.fillStyle='#f3a84f';ctx.beginPath();ctx.arc(-8,-53,12,Math.PI,Math.PI*2);ctx.lineTo(3,-50);ctx.lineTo(-18,-50);ctx.fill();ctx.restore();ctx.restore();
+ $('levelhud').textContent=`${selected+1} / 5`;$('time').textContent=format(elapsed);$('best').textContent=best[selected]?format(best[selected]):'—';$('speed').textContent=`${Math.round(Math.abs(bike.vx)*.16)} км/ч`;$('bar').style.width=`${Math.max(0,Math.min(100,(bike.x-SPAWN)/(levels[selected].finish-SPAWN)*100))}%`;
+}
+function tick(t){const dt=Math.min(.035,(t-last)/1000||.016);last=t;const count=Math.max(1,Math.ceil(dt/.008));for(let i=0;i<count;i++)update(dt/count);render();requestAnimationFrame(tick)}requestAnimationFrame(tick);
+addEventListener('keydown',e=>{if(e.code==='KeyR'){e.preventDefault();restart();return}if(e.code==='Escape'){e.preventDefault();showMenu();return}const k=keymap[e.code];if(k){e.preventDefault();if(playing)keys[k]=true}});addEventListener('keyup',e=>{const k=keymap[e.code];if(k){e.preventDefault();keys[k]=false}});addEventListener('blur',clearKeys);
+for(const b of document.querySelectorAll('[data-key]')){const k=b.dataset.key;const down=e=>{e.preventDefault();if(!playing)return;try{b.setPointerCapture?.(e.pointerId)}catch(_){}keys[k]=true;b.classList.add('held')},up=e=>{e.preventDefault();keys[k]=false;b.classList.remove('held')};b.addEventListener('pointerdown',down);b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up);b.addEventListener('lostpointercapture',up);if(!window.PointerEvent){b.addEventListener('touchstart',e=>{e.preventDefault();if(playing)keys[k]=true},{passive:false});for(const event of ['touchend','touchcancel'])b.addEventListener(event,e=>{e.preventDefault();keys[k]=false},{passive:false})}}
+$('start').onclick=restart;$('reset').onclick=restart;$('menu').onclick=showMenu;$('next').onclick=next;bike.y=height(SPAWN)-70;showMenu();
+})();
+</script></body></html>
