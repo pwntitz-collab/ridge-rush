@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,viewport-fit=cover,user-scalable=no"><meta name="theme-color" content="#0c1b30"><title>RIDGE RUSH 2.0 | LEVEL TEST</title>
+<style>
+/* Game UI must never trigger native text selection, magnifier, callout, or tap highlight. */
+html, body, body *, body *::before, body *::after {
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+button, canvas, #controls, #controls * { touch-action: none; }
+
+*{box-sizing:border-box}html,body{height:100%;margin:0;overflow:hidden}body{background:#0d2037;color:#fff;font-family:system-ui,Arial,sans-serif;touch-action:none;user-select:none;-webkit-user-select:none}canvas{display:block;width:100vw;height:100dvh;touch-action:none}#hud{position:fixed;top:env(safe-area-inset-top,8px);left:10px;right:10px;display:flex;align-items:start;gap:8px;pointer-events:none}#hud .cell{background:#0c1a30df;border:1px solid #ffffff2a;border-radius:11px;padding:7px 12px;min-width:68px}small{display:block;font-size:9px;color:#a7c5df;font-weight:700;letter-spacing:.09em}strong{font-size:17px;font-weight:900}#buttons{position:fixed;right:10px;top:78px;display:flex;gap:6px}button{font-family:inherit;color:#fff;background:#18334dcc;border:1px solid #ffffff40;padding:10px 13px;border-radius:12px;font-weight:800;cursor:pointer;touch-action:none}button:active,.active{background:#ffb35c!important;color:#18283b!important}#controls{position:fixed;bottom:max(12px,env(safe-area-inset-bottom,12px));left:8px;right:8px;display:flex;justify-content:space-between;pointer-events:none;gap:8px}.set{display:flex;gap:6px;pointer-events:auto}.key{height:clamp(56px,13vh,78px);width:clamp(49px,13vw,84px);padding:5px;font-size:23px;box-shadow:0 5px 18px #06131c60}.key span{display:block;font-size:9px;line-height:1.2}#panelwrap{position:fixed;inset:0;background:#071325d6;display:grid;place-items:center;padding:18px;backdrop-filter:blur(7px)}#panel{border:1px solid #ffffff33;border-radius:22px;background:#14283d;max-width:520px;width:100%;padding:25px;text-align:center;box-shadow:0 30px 80px #0009}#panel h1{margin:0 0 9px;font-size:clamp(23px,6vw,34px)}#panel p{color:#c1d7e8;line-height:1.5;font-size:14px}#play{background:#ffad50;color:#14263b;font-size:19px;border:0;padding:14px 24px;margin:12px 0}#play:disabled{opacity:.5}#note{font-size:12px;color:#adcbe0}#error{color:#ffb9a3;font-size:12px;overflow-wrap:anywhere}#panelwrap[hidden]{display:none!important}#progress{position:fixed;left:10px;top:69px;height:4px;background:#ffffff30;border-radius:2px;width:38%;pointer-events:none}#fill{height:100%;width:0;background:#fcb761}#callout{position:fixed;top:100px;left:50%;transform:translateX(-50%);background:#102d43df;color:#ffd8a5;padding:8px 14px;border-radius:12px;opacity:0;transition:.2s;white-space:nowrap;pointer-events:none}#callout.visible{opacity:1}@media(max-width:610px){#hud{gap:5px;left:6px;right:6px}#hud .cell{padding:6px 8px;min-width:0}#hud strong{font-size:14px}#buttons{top:78px;right:7px}#progress{top:64px}#controls{left:5px;right:5px;gap:4px}.set{gap:4px}.key{font-size:21px;width:clamp(46px,15vw,72px)}.key span{font-size:8px}}
+
+/* Ridge Rush 1.5: dedicated physical throttle and brakes. */
+#controls{bottom:max(10px,env(safe-area-inset-bottom,10px));left:max(10px,env(safe-area-inset-left,10px));right:max(10px,env(safe-area-inset-right,10px));align-items:end;gap:16px;z-index:5}
+.leanpad{display:flex;gap:9px;pointer-events:auto;align-items:end}
+.key.lean{width:clamp(80px,15vw,125px);height:clamp(70px,18vh,112px);border-radius:18px;font-size:30px;background:#18344de8;touch-action:none}
+.key.lean span{font-size:10px;margin-top:3px}
+.drivewrap{pointer-events:auto}
+#drivepad{width:clamp(148px,26vw,215px);height:clamp(114px,28vh,156px);border-radius:22px;background:#f6a94aeb;border:2px solid #ffdc9a;display:flex;flex-direction:column;justify-content:space-between;text-align:center;color:#192b3b;touch-action:none;cursor:pointer;box-shadow:0 4px 24px #091a2f99;padding:9px;transition:background .08s}
+#drivepad.drive-rear{background:#7ab9d9}#drivepad.drive-front{background:#f18e81}
+.drivehint,.drivebottom{font-weight:800;font-size:clamp(9px,1.9vw,11px)}.drivecenter{display:flex;align-items:center;justify-content:center;gap:8px}.drivecenter strong{font-size:26px}.drivecenter span{font-size:17px;font-weight:900}
+#orient{position:fixed;left:50%;top:57px;transform:translateX(-50%);background:#091b30ed;border:1px solid #ffffff44;border-radius:12px;padding:8px 14px;z-index:7;font-size:12px;white-space:nowrap;pointer-events:none}
+#orient[hidden]{display:none}
+@media(max-width:610px){.key.lean{width:clamp(68px,19vw,100px);height:clamp(66px,19vh,90px)}#drivepad{width:clamp(126px,32vw,176px);height:clamp(105px,29vh,140px)}.drivecenter span{font-size:14px}.drivehint,.drivebottom{font-size:9px}#controls{gap:7px}}
+@media(orientation:portrait) and (max-width:700px){#orient{display:block}#controls{bottom:18px}.leanpad{gap:3px}.key.lean{width:17vw;height:66px;font-size:22px}.key.lean span{font-size:8px}#drivepad{width:36vw;height:120px}}
+@media(max-height:400px){#buttons{top:43px}#controls{bottom:5px}.key.lean{height:64px}#drivepad{height:105px}#hud .cell{padding:4px 8px}#progress{top:52px}}
+#levels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:12px 0;max-height:42vh;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y}
+.levelbtn{padding:9px 7px;text-align:left;font-size:12px;line-height:1.3;border:1px solid #ffffff35;background:#234057}
+.levelbtn.chosen{border:2px solid #ffc06c;background:#3f5160}
+.levelbtn small{display:block;letter-spacing:0;font-size:10px;margin-top:4px}
+#panel{max-height:94dvh;overflow-y:auto;touch-action:pan-y}
+@media(max-height:450px){#levels{grid-template-columns:repeat(3,minmax(0,1fr));max-height:32vh}.levelbtn{padding:6px}}
+
+body:not(.in-game) #controls,body:not(.in-game) #hud,body:not(.in-game) #progress,
+body:not(.in-game) #buttons,body:not(.in-game) #callout,body:not(.in-game) #orient{display:none!important}
+/* All touch targets stay separate and can be held independently. */
+.drivewrap{display:flex;align-items:flex-end;gap:8px;pointer-events:auto}
+#drivepad{width:clamp(95px,18vw,165px);height:clamp(72px,18vh,105px);border-radius:17px;
+ display:flex;align-items:center;justify-content:center;background:#efa846;color:#20283a;padding:5px}
+#drivepad .drivehint,#drivepad .drivebottom{display:none}
+#drivepad .drivecenter strong{font-size:25px}
+#drivepad .drivecenter span{font-size:18px}
+.brake-col{display:flex;flex-direction:column;gap:7px}
+.key.brake{width:clamp(68px,11vw,100px);height:clamp(34px,9vh,52px);border-radius:12px;
+ font-size:12px;line-height:1.15;padding:4px;background:#254860ea}
+#controls .key{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+@media(max-width:660px){.drivewrap{gap:4px}.key.brake{width:clamp(55px,14vw,80px);font-size:10px}
+ #drivepad{width:clamp(76px,20vw,120px);height:clamp(70px,20vh,90px)}
+ .key.lean{width:clamp(56px,17vw,91px);height:clamp(69px,19vh,90px)}}
+@media(orientation:portrait) and (max-width:700px){#drivepad{width:22vw;height:74px}.key.brake{width:15vw;height:36px}
+ .key.lean{width:17vw;height:69px}}
+
+/* 1.7: larger, easier-to-hit tilt controls. No gameplay physics changes. */
+.key.lean{width:clamp(96px,17vw,145px);height:clamp(98px,25vh,145px);min-height:98px;font-size:34px;border-radius:20px}
+.key.lean span{font-size:11px}
+@media (max-width:660px){
+  .leanpad{gap:7px}
+  .key.lean{width:clamp(72px,19vw,112px);height:clamp(94px,27vh,122px);min-height:94px;font-size:29px}
+  .key.lean span{font-size:9px}
+}
+@media (orientation:portrait) and (max-width:700px){
+  .key.lean{width:clamp(62px,21vw,98px);height:clamp(96px,16vh,122px);min-height:96px;font-size:28px}
+}
+@media (orientation:landscape) and (max-height:400px){
+  .key.lean{height:clamp(94px,32vh,116px);min-height:94px}
+}
+
+/* 1.9: explicit stable sizing for landscape touch controls.
+   Avoid CSS calc multiplication / implicit grid placement on iOS. */
+#controls{--gas-size:82px;--front-height:94px;--rear-width:112px;bottom:max(6px,env(safe-area-inset-bottom,6px));align-items:flex-end;gap:12px}
+.leanpad{gap:7px;align-items:flex-end}
+.key.lean{width:84px;height:90px;min-width:0;min-height:0;font-size:26px;border-radius:15px}
+.key.lean span{font-size:9px}
+.drivewrap{display:grid;position:relative;grid-template-columns:var(--rear-width) var(--gas-size);grid-template-rows:var(--front-height) var(--gas-size);gap:7px;align-items:stretch;justify-items:stretch;pointer-events:auto;width:auto;height:auto}
+#drivepad{grid-column:2;grid-row:2;position:relative;width:var(--gas-size);height:var(--gas-size);min-width:0;min-height:0;max-width:none;max-height:none;border-radius:16px;padding:5px;margin:0;aspect-ratio:1 / 1;transform:none;box-shadow:0 4px 16px #091a2f99}
+#drivepad .drivecenter{flex-direction:column;gap:2px}
+#drivepad .drivecenter strong{font-size:23px;line-height:1}
+#drivepad .drivecenter span{font-size:15px}
+.key.brake{position:relative;min-width:0;min-height:0;max-width:none;max-height:none;line-height:1.12;padding:5px;font-size:11px;border-radius:13px;transform:none}
+.key.brake.front-brake{grid-column:2;grid-row:1;align-self:stretch;justify-self:center;width:85%;height:100%;background:rgba(214,65,62,.65);border-color:rgba(255,165,160,.85)}
+.key.brake.rear-brake{grid-column:1;grid-row:2;align-self:end;justify-self:stretch;width:100%;height:40px;background:rgba(116,126,140,.63);border-color:rgba(210,216,222,.55)}
+#controls button{appearance:none;-webkit-appearance:none;outline:none;-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important;-webkit-tap-highlight-color:transparent!important}
+@media(orientation:landscape) and (max-height:450px){
+ #controls{--gas-size:76px;--front-height:84px;--rear-width:106px;bottom:5px}
+ .key.lean{width:78px;height:82px;min-height:0}
+}
+@media(orientation:portrait) and (max-width:700px){
+ #controls{--gas-size:65px;--front-height:75px;--rear-width:80px;gap:7px;bottom:10px}
+ .key.lean{width:17vw;height:78px;min-height:0}
+ .key.brake{font-size:9px}
+}
+@media(max-width:700px) and (orientation:landscape){
+ #controls{--gas-size:64px;--front-height:70px;--rear-width:80px}
+ .key.lean{width:62px;height:72px;min-height:0}
+ .key.brake{font-size:9px}
+}
+
+/* 2.0: unified HUD, including both menu controls, all on one horizontal rail. */
+#hud{position:fixed;top:max(6px,env(safe-area-inset-top,6px));left:max(8px,env(safe-area-inset-left,8px));right:max(8px,env(safe-area-inset-right,8px));display:flex;align-items:stretch;gap:7px;z-index:9;pointer-events:none}
+#hud .cell,#hud #buttons button{border:1px solid #ffffff30;border-radius:12px;background:#102139de;padding:7px 10px;display:flex;flex-direction:column;justify-content:center;min-height:57px;white-space:nowrap}
+#hud .cell{flex:1 1 0;min-width:0}
+#hud small,#hud #buttons small{font-size:clamp(8px,.85vw,11px);line-height:1.1;color:#b1cadd;letter-spacing:.04em}
+#hud strong,#hud #buttons strong{font-size:clamp(12px,1.5vw,19px);line-height:1.25;color:white}
+#hud #buttons{position:static;display:flex;flex:2 1 0;min-width:0;gap:7px;pointer-events:auto}
+#hud #buttons button{flex:1 1 0;min-width:0;text-align:center;align-items:center;cursor:pointer;touch-action:manipulation}
+#progress{top:calc(max(6px,env(safe-area-inset-top,6px)) + 64px);width:42%;left:max(8px,env(safe-area-inset-left,8px))}
+#controls, #controls *,#hud,#hud *,#panelwrap,#panelwrap *{user-select:none!important;-webkit-user-select:none!important;-webkit-touch-callout:none!important;-webkit-tap-highlight-color:transparent!important}
+#controls button, #controls button *{touch-action:none!important}
+#controls button::selection,#controls button *::selection,#hud *::selection{background:transparent;color:inherit}
+#controls button:focus,#hud button:focus{outline:none}
+@media(max-width:780px){#hud{gap:4px}#hud .cell,#hud #buttons button{padding:5px 5px;min-height:47px;border-radius:9px}#hud #buttons{gap:4px}#hud strong,#hud #buttons strong{font-size:clamp(10px,1.8vw,15px)}#hud small,#hud #buttons small{font-size:8px}#progress{top:calc(max(6px,env(safe-area-inset-top,6px)) + 51px)}}
+@media(max-width:510px){#hud{gap:3px}#hud .cell,#hud #buttons button{padding:4px 3px;min-height:45px}#hud strong,#hud #buttons strong{font-size:10px}#hud small,#hud #buttons small{font-size:7px}}
+</style></head><body>
+<canvas id="game"></canvas>
+<div id="hud"><div class="cell"><small>RIDGE RUSH</small><strong>2.0</strong></div><div class="cell"><small>ВРЕМЯ</small><strong id="time">00:00.0</strong></div><div class="cell"><small>СКОРОСТЬ</small><strong id="speed">0 км/ч</strong></div><div class="cell"><small>ДИСТАНЦИЯ</small><strong id="dist">0 м</strong></div><div id="buttons"><button id="restart" aria-label="Начать заново"><small>РЕСТАРТ</small><strong>↻ Заново</strong></button><button id="menu" aria-label="Открыть меню"><small>МЕНЮ</small><strong>☰ Меню</strong></button></div></div>
+<div id="progress"><div id="fill"></div></div>
+<div id="controls" aria-label="Управление во время заезда">
+  <div class="leanpad" aria-label="Управление балансом">
+    <button class="key lean" data-k="back" aria-label="Нос вверх">↶<span>НОС ВВЕРХ</span></button>
+    <button class="key lean" data-k="forward" aria-label="Нос вниз">↷<span>НОС ВНИЗ</span></button>
+  </div>
+  <div class="drivewrap" aria-label="Газ и независимые тормоза">
+    <button class="key brake front-brake" data-k="frontBrake">ПЕРЕДНИЙ<br>ТОРМОЗ</button>
+    <button class="key brake rear-brake" data-k="rearBrake">ЗАДНИЙ<br>ТОРМОЗ</button>
+    <button id="drivepad" data-k="gas" aria-label="Газ"><div class="drivecenter"><strong>▶</strong><span>ГАЗ</span></div></button>
+  </div>
+</div>
+<div id="orient" hidden>↻ Поверни телефон горизонтально — так удобнее управлять</div>
+
+<div id="callout"></div>
+<div id="panelwrap"><div id="panel"><h1 id="title">🏍️ RIDGE RUSH 2.0</h1><p id="message">Пять трасс на выбор. «Марафон» стал сложнее: крутые подъёмы, длинные разрывы и три трамплина. Газ и тормоза — отдельные кнопки.</p><div id="levels" aria-label="Выбор трассы"></div><button id="play" disabled>Загрузка движка…</button><p id="note">ПК: D/→ газ · A задний тормоз · S передний тормоз · W/↑ нос вверх · ↓ нос вниз · R рестарт.<br>Телефон: слева баланс; справа отдельные кнопки ГАЗ, ПЕРЕДНИЙ и ЗАДНИЙ ТОРМОЗ.</p><div id="error"></div></div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/planck-js/1.5.0/planck.min.js"></script>
+<script>
+(()=>{'use strict';
+const q=s=>document.getElementById(s),cv=q('game'),g=cv.getContext('2d');
+const pressed={gas:false,back:false,forward:false,rearBrake:false,frontBrake:false};
+const keyMap={KeyD:'gas',ArrowRight:'gas',KeyA:'rearBrake',ArrowLeft:'rearBrake',KeyS:'frontBrake',Space:'frontBrake',KeyW:'back',ArrowUp:'back',KeyE:'forward',ArrowDown:'forward'};
+let world,frame,rear,front,rearJoint,frontJoint,headFixture,playing=false,elapsed=0,won=false,dead=false,camera={x:0,y:0};
+let throttleHold=0; // initial throttle ramp, seconds
+const P=window.planck,Vec=P&&P.Vec2;let terrain=[];
+// Each level is an independent Box2D edge course, in metres (y increases down).
+// Every gap is deliberate; no overlapping or backward-running terrain edges.
+const LEVELS=[
+ {name:'Тренировка',kind:'Средняя · 65 м',finish:62,paths:[
+  [[0,8],[4.7,8],[7.9,7.1],[10.4,7.1],[12.5,8],[15,8],[16.6,7.45],[18.1,7.45],[18.1,6.85],[20.8,6.85],[22.4,8]],
+  [[25.2,8],[27,8],[30.4,6.65],[33.4,6.65],[35.2,7.8],[40,7.8],[42.5,8.35],[47.5,8.35],[50,7.15],[53,7.15],[57,8],[65,8]]]},
+ {name:'Короткий ад',kind:'Сложная · 48 м',finish:47,paths:[
+  [[0,8],[5,8],[7.2,6.85],[8.7,6.85],[10.0,8.3],[12,8.3],[13.1,6.9],[14.6,6.9],[14.6,6.35],[17,6.35],[18.2,8.4],[20.4,8.4]],
+  [[22.2,8.3],[23.2,8.3],[24.5,6.6],[26.1,6.6],[27.2,7.9],[28.5,7.9],[28.5,6.9],[30.0,6.9],[32,8]],
+  [[34,8],[35.0,7.5],[36,7.5],[37.0,6.4],[39,6.4],[40,8.2],[48,8.2]]]},
+ {name:'Марафон',kind:'Длинная, сложная · 190 м',finish:189,paths:[
+  // Part A: rolling hills with demanding climbs, then a steep controlled descent.
+  [[0,8],[5,8],[8,7.25],[11,7.25],[14,8.55],[18,8.55],
+   [21.0,6.9],[24.0,6.9],[26.6,8.15],[30.3,8.15],
+   [32.4,7.15],[34.0,7.15],[35.4,6.55],[37,6.55],[39.8,8.45],
+   [44.8,8.45],[47.1,7.4],[49.0,7.4],[50.5,8.15],[54.0,8.15],
+   // Jump 1: 2.9 m, ramp rises 0.9 m over 2.7 m (~18.4 degrees).
+   [55.3,7.75],[58,6.85]],
+  [[60.9,7.55],[65.5,7.55],[67.1,8.55],[71,8.55],
+   // Stepped climb, avoid a sheer collision wall.
+   [73.0,7.45],[75.3,7.45],[76.5,6.8],[79.0,6.8],[81.5,8.35],
+   [85,8.35],[87.2,7.0],[89.8,7.0],[91.5,8.15],[94.0,8.15],
+   // Jump 2: 3.1 m, 0.95 m takeoff rise (20 deg), 0.75 m landing drop.
+   [95.0,7.75],[97.6,6.8]],
+  [[100.7,7.55],[104,7.55],[106.2,8.55],[110,8.55],
+   [112.0,7.25],[114.2,7.25],[115.4,6.5],[118.0,6.5],[120.4,8.4],
+   [125,8.4],[128,7.1],[131,7.1],[133.4,8.65],[137,8.65],
+   [139.3,7.7],[141.1,7.7],[142.7,8.15],[146.0,8.15],
+   // Jump 3: 3.35 m, uphill ramp: rises 1.0 over 2.8 m (~19.7 deg).
+   [147.4,7.75],[150.2,6.75]],
+  [[153.55,7.6],[158.1,7.6],[160.2,8.6],[164.0,8.6],
+   // Final technical hills, manageable without a new mandatory gap.
+   [166.2,7.25],[168.2,7.25],[169.8,6.7],[171.7,6.7],[174.5,8.4],
+   [179,8.4],[182,7.3],[185,7.3],[187,8.05],[193,8.05]]]},
+ {name:'Прыжки',kind:'Средняя · 94 м',finish:92,paths:[
+  [[0,8],[6,8],[9.5,6.8],[12.0,6.8],[14.0,8.0],[16,8.0],[18.2,6.9],[20.1,6.9]],
+  [[23.2,8],[26,8],[28.3,6.5],[30.0,6.5],[32,8],[37,8],[39.0,6.9],[41.2,6.9]],
+  [[45,8.1],[48,8.1],[51,7.1],[55,7.1],[58,8.1],[62,8.1],[64,6.5],[66.5,6.5]],
+  [[70,8],[75,8],[78,7.1],[81,7.1],[84,8],[95,8]]]},
+ {name:'Баланс',kind:'Техническая · 76 м',finish:74,paths:[
+  [[0,8],[5.5,8],[7.2,7.4],[9.5,7.4],[11,8.8],[14,8.8],[15.8,7.0],[17.5,7.0],[17.5,6.45],[19,6.45]],
+  [[20.9,7.8],[23.3,7.8],[24.6,6.5],[27,6.5],[28.4,8.5],[31.2,8.5],[32.4,7.1],[34.0,7.1],[34.0,6.55],[36.2,6.55],[38.3,8]],
+  [[41,8],[43.2,8],[44.4,7.25],[46.5,7.25],[48,8.65],[51,8.65],[52.5,6.8],[54.2,6.8],[56,8.3],[60,8.3],[62,7.2],[64,7.2],[66,8],[77,8]]]}
+];
+let levelIndex=0;let current=LEVELS[levelIndex];
+function chooseLevel(i){levelIndex=i;current=LEVELS[i];renderLevels();}
+function renderLevels(){const root=q('levels');root.innerHTML='';LEVELS.forEach((level,i)=>{const b=document.createElement('button');b.className='levelbtn'+(i===levelIndex?' chosen':'');b.textContent=(i+1)+'. '+level.name;const info=document.createElement('small');info.textContent=level.kind;b.append(info);b.addEventListener('click',()=>chooseLevel(i));root.append(b);});}
+renderLevels();
+let ratio=1,view={w:0,h:0},pixel=43;
+function size(){view.w=innerWidth;view.h=innerHeight;ratio=Math.min(devicePixelRatio||1,2);cv.width=Math.round(view.w*ratio);cv.height=Math.round(view.h*ratio);cv.style.width=view.w+'px';cv.style.height=view.h+'px';pixel=Math.max(28,Math.min(52,view.w/18));}
+addEventListener('resize',size);size();
+function error(message){q('error').textContent=message;q('play').disabled=true;q('play').textContent='Не удалось загрузить';q('panelwrap').hidden=false;}
+if(!P||!P.World||!P.WheelJoint){error('Библиотека Box2D/Planck.js не загрузилась. Проверь подключение к интернету и перезагрузи страницу.');return;}
+function init(){
+ world=new P.World({gravity:Vec(0,12)});terrain=[];won=false;dead=false;elapsed=0;
+ const ground=world.createBody();
+ for(const path of current.paths){for(let i=1;i<path.length;i++){
+  const a=path[i-1],b=path[i];ground.createFixture(P.Edge(Vec(...a),Vec(...b)),{friction:1.25,restitution:0});terrain.push([a,b]);
+ }}
+ // Frame mass, geometry, and wheels are Box2D rigid bodies. Negative collision
+ // group prevents frame and wheels from accidentally colliding with each other.
+ const START_X=1.95, START_Y=7.03;
+ frame=world.createDynamicBody({position:Vec(START_X,START_Y-0.48),angularDamping:1.65,linearDamping:0.12,allowSleep:false});
+ frame.createFixture(P.Box(.84,.19,Vec(0,-.045),0),{density:4,friction:.5,filterGroupIndex:-1});
+ frame.createFixture(P.Box(.30,.16,Vec(-.12,-.27),0),{density:2,filterGroupIndex:-1});
+ headFixture=frame.createFixture(P.Circle(Vec(.10,-.94),.19),{isSensor:true,filterGroupIndex:-1});
+ // Wheelbase 1.48m, both wheels physically spin. y positive points down.
+ const axleY=START_Y-.07,rx=START_X-.74,fx=START_X+.74;
+ rear=world.createDynamicBody({position:Vec(rx,axleY),angularDamping:.15,allowSleep:false});
+ front=world.createDynamicBody({position:Vec(fx,axleY),angularDamping:.15,allowSleep:false});
+ const wheelFixture={density:1.45,friction:2.1,restitution:0,filterGroupIndex:-1};
+ rear.createFixture(P.Circle(.34),wheelFixture);front.createFixture(P.Circle(.34),wheelFixture);
+ const axis=Vec(0,1);
+ rearJoint=world.createJoint(P.WheelJoint({frequencyHz:5.6,dampingRatio:.73,enableMotor:false,maxMotorTorque:48},frame,rear,Vec(rx,axleY),axis));
+ frontJoint=world.createJoint(P.WheelJoint({frequencyHz:5.6,dampingRatio:.73,enableMotor:false,maxMotorTorque:35},frame,front,Vec(fx,axleY),axis));
+ // Head is a sensor. Detecting the head hitting terrain counts as a crash.
+ world.on('begin-contact',c=>{if(!playing)return;const a=c.getFixtureA(),b=c.getFixtureB();if((a===headFixture||b===headFixture)&&(!a.isSensor()||!b.isSensor()))queuedCrash='Удар шлемом';});
+ camera={x:0,y:0};throttleHold=0;updateHUD();
+}
+function safeSetMotor(j,on,speed,torque){j.enableMotor(on);if(on){j.setMotorSpeed(speed);j.setMaxMotorTorque(torque);}}
+function controls(){
+ if(pressed.gas && !pressed.rearBrake){throttleHold=Math.min(.55,throttleHold+1/60);}
+ else throttleHold=0;
+ // Rear wheel motor is the ONLY engine. Front wheel is always freely rolling
+ // unless its brake is applied. No force is added to chassis velocity.
+ if(pressed.rearBrake)safeSetMotor(rearJoint,true,0,65);
+ else if(pressed.gas){
+  // Less aggressive initial launch: 18% less motor torque at first touch,
+  // gradually restores baseline torque in 0.55 s. Top speed unchanged.
+  const launchFactor=.82+.18*Math.min(1,throttleHold/.55);
+  safeSetMotor(rearJoint,true,24,48*launchFactor);
+ }
+ else safeSetMotor(rearJoint,false,0,0);
+ if(pressed.frontBrake)safeSetMotor(frontJoint,true,0,72);
+ else safeSetMotor(frontJoint,false,0,0);
+ const lean=(pressed.forward?1:0)-(pressed.back?1:0);
+ if(lean){frame.applyTorque(lean*(lean<0?16.2:18),true);} // nose-up is 10% gentler
+}
+function releaseControls(){
+ Object.keys(pressed).forEach(k=>setControl(k,false));
+ for(const el of document.querySelectorAll('[data-k]'))el.classList.remove('active');
+}
+function enterMenu(title,message,button){
+ playing=false;releaseControls();document.body.classList.remove('in-game');
+ q('title').textContent=title;q('message').textContent=message;
+ q('play').textContent=button;q('panelwrap').hidden=false;
+}
+let queuedCrash='';
+function die(msg){if(dead||won)return;dead=true;enterMenu('ПАДЕНИЕ',msg+' — попробуй ещё раз','ПОВТОРИТЬ');}
+function show(title,message,button){enterMenu(title,message,button);}
+function start(){
+ playing=false;releaseControls();queuedCrash='';acc=0;
+ // A fresh Planck.World is created on every retry; no old contacts/joints remain.
+ init();last=performance.now();playing=true;
+ document.body.classList.add('in-game');q('panelwrap').hidden=true;
+}
+q('play').disabled=false;q('play').textContent='ПОЕХАЛИ!';q('play').addEventListener('click',start);
+q('restart').addEventListener('click',start);
+q('menu').addEventListener('click',()=>show('RIDGE RUSH 2.0','Выбери трассу и начни новый заезд.','ИГРАТЬ'));
+function setControl(k,v){pressed[k]=v;for(const el of document.querySelectorAll('[data-k="'+k+'"]'))el.classList.toggle('active',v);}
+addEventListener('keydown',e=>{const k=keyMap[e.code];if(k){e.preventDefault();setControl(k,true);}else if(e.code==='KeyR'){e.preventDefault();start();}else if(e.code==='Escape'){playing=false;show('ПАУЗА','Продолжить можно новым заездом.','НАЧАТЬ ЗАНОВО');}});
+addEventListener('keyup',e=>{const k=keyMap[e.code];if(k){e.preventDefault();setControl(k,false);}});
+addEventListener('blur',()=>{Object.keys(pressed).forEach(k=>setControl(k,false));});
+// Prevent native selection and long-press callouts across the entire game.
+// This does not cancel button click/pointer events or level-menu scrolling.
+document.addEventListener('selectstart', e => { if (e.cancelable) e.preventDefault(); }, {passive:false});
+document.addEventListener('contextmenu', e => { if (e.cancelable) e.preventDefault(); }, {passive:false});
+document.addEventListener('dragstart', e => { if (e.cancelable) e.preventDefault(); }, {passive:false});
+// iOS Safari: prevent pinch zoom and double-tap zoom on ALL gameplay surfaces.
+// UI click actions (start/restart/menu) remain usable.
+for(const eventName of ['gesturestart','gesturechange','gestureend']){
+ document.addEventListener(eventName,e=>{if(e.cancelable)e.preventDefault();},{passive:false});
+}
+// touch-action:none disables double-tap zoom on the playable surface.
+// Do not suppress touchend globally: it can swallow iOS button clicks.
+document.addEventListener('touchmove',e=>{
+ if(playing && e.cancelable)e.preventDefault();
+},{passive:false});
+// Suppress the iOS long-press native callout during gameplay.
+document.addEventListener('contextmenu',e=>{if(document.body.classList.contains('in-game'))e.preventDefault();});
+// Prevent Safari's double-tap smart-zoom on any gameplay area.
+document.addEventListener('dblclick',e=>{if(playing&&e.cancelable)e.preventDefault();},{passive:false});
+document.addEventListener('touchstart',e=>{if(playing&&e.touches.length>1&&e.cancelable)e.preventDefault();},{passive:false});
+for(const el of document.querySelectorAll('[data-k]')){
+ const k=el.dataset.k;
+ el.addEventListener('pointerdown',e=>{e.preventDefault();try{el.setPointerCapture(e.pointerId);}catch(_){}setControl(k,true);});
+ for(const ev of ['pointerup','pointercancel','lostpointercapture'])el.addEventListener(ev,e=>{e.preventDefault();setControl(k,false);});
+}
+// iOS WebKit can still begin native selection on rapid repeated taps despite CSS.
+// Prevent touch defaults on gameplay controls only; pointer events above remain the input source.
+const touchControls=q('controls');
+for(const type of ['touchstart','touchmove','touchend','touchcancel']){
+ touchControls.addEventListener(type,e=>{if(e.cancelable)e.preventDefault();},{passive:false,capture:true});
+}
+document.addEventListener('selectionchange',()=>{
+ const selection=window.getSelection&&window.getSelection();
+ if(selection&&selection.rangeCount)selection.removeAllRanges();
+});
+for(const el of document.querySelectorAll('#controls button')){
+ el.addEventListener('pointerdown',()=>{try{el.blur();}catch(_){};});
+}
+// Every button has an independent pointer; no swipe-to-brake shortcuts.
+// Multiple simultaneous pointers are supported by pointer capture on each key.
+function orientationHint(){q('orient').hidden=!(matchMedia('(orientation:portrait) and (max-width:700px)').matches);}
+addEventListener('resize',orientationHint);orientationHint();
+function updateHUD(){q('time').textContent=`${String(Math.floor(elapsed/60)).padStart(2,'0')}:${String(Math.floor(elapsed%60)).padStart(2,'0')}.${Math.floor(elapsed*10)%10}`;
+ q('dist').textContent=Math.max(0,Math.floor((frame?.getPosition().x||2)-2))+' м';
+ q('speed').textContent=Math.round(Math.max(0,frame?.getLinearVelocity().x||0)*3.6)+' км/ч';
+ q('fill').style.width=Math.min(100,Math.max(0,((frame?.getPosition().x||2)-2)/(current.finish-2)*100))+'%';}
+function draw(){g.setTransform(ratio,0,0,ratio,0,0);const W=view.w,H=view.h;g.clearRect(0,0,W,H);
+ const sky=g.createLinearGradient(0,0,0,H);sky.addColorStop(0,'#18334c');sky.addColorStop(1,'#8fb4c1');g.fillStyle=sky;g.fillRect(0,0,W,H);
+ if(!frame)return;
+ const f=frame.getPosition(),targetX=f.x-Math.min(5,W/pixel*.33),targetY=f.y-H/pixel*.46;
+ camera.x+=(targetX-camera.x)*.09;camera.y+=(targetY-camera.y)*.065;
+ const sx=x=>(x-camera.x)*pixel,sy=y=>(y-camera.y)*pixel;
+ // distant hills
+ for(let layer=0;layer<2;layer++){
+  g.beginPath();g.moveTo(0,H);for(let x=0;x<=W+15;x+=15){let wx=(x/pixel+camera.x)*(layer?.32:.13);let y=H*.58+Math.sin(wx*.42+layer)*27+Math.sin(wx*.2)*45+layer*55;g.lineTo(x,y);}g.lineTo(W,H);g.closePath();g.fillStyle=layer?'#547f86':'#7399a1';g.fill();}
+ // Visible terrain segments: each is the actual edge used by Box2D.
+ for(const [a,b] of terrain){const x1=sx(a[0]),x2=sx(b[0]),y1=sy(a[1]),y2=sy(b[1]);if(Math.min(x1,x2)>W+70||Math.max(x1,x2)<-70)continue;
+  g.strokeStyle='#2d544a';g.lineWidth=13;g.lineCap='round';g.beginPath();g.moveTo(x1,y1);g.lineTo(x2,y2);g.stroke();
+  g.strokeStyle='#bbd28b';g.lineWidth=5;g.beginPath();g.moveTo(x1,y1-2);g.lineTo(x2,y2-2);g.stroke();
+ }
+ const fx=sx(current.finish),fy=sy(current.paths[current.paths.length-1].at(-1)[1]);g.strokeStyle='#fff';g.lineWidth=3;g.beginPath();g.moveTo(fx,fy);g.lineTo(fx,fy-90);g.stroke();
+ for(let i=0;i<3;i++)for(let j=0;j<4;j++){g.fillStyle=(i+j)%2?'#222':'#eee';g.fillRect(fx+j*9,fy-90+i*9,9,9);}
+ function wheel(body){const p=body.getPosition(),x=sx(p.x),y=sy(p.y),r=.34*pixel;
+  g.fillStyle='#121e2b';g.beginPath();g.arc(x,y,r,0,Math.PI*2);g.fill();g.fillStyle='#596d77';g.beginPath();g.arc(x,y,r*.68,0,Math.PI*2);g.fill();g.strokeStyle='#dae3e7';g.lineWidth=2;
+  for(let k=0;k<5;k++){const ang=body.getAngle()+k*Math.PI*2/5;g.beginPath();g.moveTo(x,y);g.lineTo(x+Math.cos(ang)*r*.61,y+Math.sin(ang)*r*.61);g.stroke();}g.fillStyle='#0d2434';g.beginPath();g.arc(x,y,4,0,Math.PI*2);g.fill();}
+ const rp=rear.getPosition(),fp=front.getPosition();
+ const xR=sx(rp.x),yR=sy(rp.y),xF=sx(fp.x),yF=sy(fp.y);
+ const cx=sx(f.x),cy=sy(f.y),a=frame.getAngle();
+ g.save();g.translate(cx,cy);g.rotate(a);g.strokeStyle='#ffb35b';g.lineWidth=5;g.lineJoin='round';g.lineCap='round';g.beginPath();g.moveTo(-.75*pixel,.38*pixel);g.lineTo(-.24*pixel,-.13*pixel);g.lineTo(.34*pixel,.37*pixel);g.lineTo(-.75*pixel,.38*pixel);g.lineTo(.58*pixel,-.20*pixel);g.stroke();
+ g.fillStyle='#ff7b4f';g.fillRect(-.43*pixel,-.35*pixel,.60*pixel,.18*pixel);
+ // rider stylized, rigid with chassis: head sensor roughly matches helmet
+ g.strokeStyle='#243447';g.lineWidth=9;g.beginPath();g.moveTo(.12*pixel,-.27*pixel);g.lineTo(.10*pixel,-.67*pixel);g.stroke();
+ g.fillStyle='#ffd371';g.beginPath();g.arc(.10*pixel,-.94*pixel,.19*pixel,0,Math.PI*2);g.fill();
+ g.restore();
+ g.strokeStyle='#f8d27f';g.lineWidth=3;g.beginPath();g.moveTo(xR,yR);g.lineTo(cx-.62*pixel,cy);g.moveTo(xF,yF);g.lineTo(cx+.62*pixel,cy);g.stroke();
+ wheel(rear);wheel(front);
+}
+let last=performance.now(),acc=0;
+function loop(now){requestAnimationFrame(loop);let delta=Math.min(.05,(now-last)/1000||0);last=now;
+ if(playing){acc=Math.min(2/60,acc+delta);while(acc>=1/60){controls();world.step(1/60,8,3);elapsed+=1/60;acc-=1/60;
+  if(queuedCrash){die(queuedCrash);queuedCrash='';break;}
+  if(frame.getPosition().y>15){die('Улетел с трассы');break;}
+  if(frame.getPosition().x>current.finish){won=true;playing=false;show('🏁 ФИНИШ!',`Трасса «${current.name}». Время: ${elapsed.toFixed(1)} с. Выбери следующую трассу или повтори попытку.`,'ИГРАТЬ ЕЩЁ');break;}
+  // Rider pitched far past normal control range: fall rather than self-righting.
+  const angle=frame.getAngle();if(Math.abs(angle)>2.9&&Math.abs(frame.getAngularVelocity())>1.5){die('Переворот');break;}
+ }updateHUD();}
+ draw();}
+init();requestAnimationFrame(loop);
+})();
+</script></body></html>
