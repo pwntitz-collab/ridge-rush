@@ -1,0 +1,127 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><meta name="theme-color" content="#101c2f"><title>RIDGE RUSH 0.8 — PHYSICS LAB</title><style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden}body{font:600 14px system-ui,-apple-system,Segoe UI,sans-serif;background:#122339;color:white;user-select:none;-webkit-user-select:none;touch-action:none}canvas{display:block;width:100%;height:100%;touch-action:none}button{font:inherit;background:#223951;color:#fff;border:1px solid #ffffff36;border-radius:12px;padding:11px 13px;cursor:pointer;touch-action:none}button:active,.held{background:#ffad51!important;color:#152637!important}.primary{background:#ffac4d;color:#152637;border:0;font-weight:900;padding:15px 24px}#hud{position:fixed;top:10px;left:10px;right:10px;display:flex;justify-content:space-between;gap:7px;pointer-events:none}#hud>div{background:#12243cce;border:1px solid #ffffff25;padding:8px 12px;border-radius:11px;min-width:72px}small{color:#b5c9dd;font-size:10px;letter-spacing:.06em}strong{display:block;font-size:18px;font-variant-numeric:tabular-nums}#topbuttons{position:fixed;top:73px;right:10px;display:flex;gap:7px}#topbuttons button{padding:9px 12px;background:#1d344fda}#progress{position:fixed;top:68px;left:10px;right:10px;height:4px;border-radius:6px;background:#ffffff26;overflow:hidden}#bar{height:100%;background:#ffac4d;width:0%}#controls{position:fixed;bottom:16px;left:12px;right:12px;display:flex;justify-content:space-between;gap:6px;pointer-events:none}.cluster{display:flex;gap:8px;pointer-events:auto}.control{width:clamp(59px,16vw,90px);height:clamp(63px,12vh,82px);background:#142c46d9;border:2px solid #ffffff5a;font-size:26px;padding:4px}.control span{display:block;font-size:10px;letter-spacing:.02em}#overlay{position:fixed;inset:0;background:#09172cb8;display:grid;place-items:center;padding:14px;backdrop-filter:blur(5px)}#overlay[hidden]{display:none}#panel{width:min(530px,96vw);max-height:91dvh;overflow-y:auto;background:#15283feb;border:1px solid #ffffff35;border-radius:20px;text-align:center;padding:22px;box-shadow:0 25px 80px #0009}h1{margin:0 0 8px;font-size:clamp(25px,6vw,38px)}p{color:#c6d8e9;line-height:1.45;margin:10px 0 17px}#levels{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin:16px 0}#levels button{padding:10px 0 7px;min-width:0;border:1px solid #7b92a47a}#levels button.selected{background:#ffac4d;color:#142337}#levels button small{display:block;font-size:11px;color:inherit}#overlaybuttons{display:flex;justify-content:center;gap:9px;flex-wrap:wrap}#tip{margin-top:12px;color:#aac4dd;font-size:12px}#toast{position:fixed;top:130px;left:50%;transform:translateX(-50%);padding:8px 15px;border-radius:12px;background:#13273cdd;color:#ffcf8c;pointer-events:none;opacity:0;transition:opacity .2s;white-space:nowrap}#toast.show{opacity:1}@media(max-width:560px){#hud>div{padding:7px 8px;min-width:0}strong{font-size:15px}#topbuttons{top:70px}#panel{padding:18px 15px}.control{height:66px}#controls{bottom:10px;left:7px;right:7px}.cluster{gap:5px}#levels{gap:4px}#levels button{font-size:13px}}@media(hover:hover) and (pointer:fine){#controls{opacity:.45}}
+
+#controls{bottom:10px}.cluster{gap:5px}.control{width:clamp(50px,15vw,82px);font-size:21px}.control span{font-size:9px}#controls .cluster:last-child .control{width:clamp(54px,14vw,80px)}#stats{position:fixed;top:125px;left:10px;background:#10263dc9;padding:6px 11px;border:1px solid #ffffff30;border-radius:10px;font-size:11px;color:#d3e9f6;pointer-events:none}#stats b{color:#f9c26b}#leveldetails{font-size:12px;color:#bed5e7}#overlaybuttons{margin-top:12px}@media(max-width:560px){#controls{bottom:8px;left:4px;right:4px;gap:4px}.control{width:clamp(48px,15vw,74px);height:63px}.control span{font-size:8px}#controls .cluster:last-child .control{width:clamp(48px,14vw,72px)}#stats{top:117px}}
+</style></head><body>
+<canvas id="game"></canvas>
+<div id="hud"><div><small>РИДЖ 0.8</small><strong id="levelhud">1 / 5</strong></div><div><small>ВРЕМЯ</small><strong id="time">00:00.0</strong></div><div><small>РЕКОРД</small><strong id="best">—</strong></div><div><small>СКОРОСТЬ</small><strong id="speed">0 км/ч</strong></div></div>
+<div id="progress"><div id="bar"></div></div>
+<div id="topbuttons"><button id="menu">☰ Трассы</button><button id="reset">↻ Рестарт</button></div>
+<div id="stats">Заднее колесо: <b id="rear">нет сцепления</b> · Переднее: <b id="front">в воздухе</b></div>
+<div id="controls"><div class="cluster"><button class="control" data-key="leanBack">↶<span>НАЗАД</span></button><button class="control" data-key="leanForward">↷<span>ВПЕРЁД</span></button></div><div class="cluster"><button class="control" data-key="rearBrake">▣<span>ЗАД. ТОРМ.</span></button><button class="control" data-key="frontBrake">▣<span>ПЕР. ТОРМ.</span></button><button class="control" data-key="gas">▶<span>ГАЗ</span></button></div></div>
+<div id="overlay"><div id="panel"><h1 id="headline">🏍️ RIDGE RUSH 0.8</h1><p id="message">Физический полигон. Только задний привод, два независимых тормоза, столкновения с препятствиями и тяговитый стоковый мотор.</p><div id="levels"></div><div id="leveldetails"></div><div id="overlaybuttons"><button class="primary" id="start">ПОЕХАЛИ!</button><button id="next" hidden>Следующая трасса →</button></div><div id="tip">ПК: D / → — газ, A — задний тормоз, S — передний тормоз, W / ↑ — наклон назад, ↓ — наклон вперёд. R — рестарт, Esc — меню.</div></div></div>
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id), canvas=$('game'), ctx=canvas.getContext('2d');
+const keys={gas:false,rearBrake:false,frontBrake:false,leanBack:false,leanForward:false};
+const keymap={KeyD:'gas',ArrowRight:'gas',KeyA:'rearBrake',ArrowLeft:'rearBrake',KeyS:'frontBrake',Space:'frontBrake',KeyW:'leanBack',ArrowUp:'leanBack',ArrowDown:'leanForward',KeyE:'leanForward'};
+const tracks=[
+ {name:'Физический полигон',tag:'средняя · проверяем механику',stars:[30,50],parts:[[[0,420],[155,420],[220,415],[325,372],[365,372],[365,420],[410,420],[460,335],[480,335],[480,420],[580,420],[630,375],[660,375]],[[715,425],[840,425],[895,285],[920,285],[920,430],[1040,430],[1100,375],[1190,390],[1280,390]]]},
+ {name:'Короткий ад',tag:'короткая · очень сложная',stars:[32,65],parts:[[[0,420],[135,420],[200,395],[220,310],[245,310],[245,425],[360,425],[405,325],[430,325]],[[505,435],[570,435],[605,335],[635,335],[635,440],[705,440],[745,365],[775,365],[775,430],[890,430]]]},
+ {name:'Длинная дорога',tag:'длинная · умеренная',stars:[95,160],parts:[[[0,420],[190,420],[275,365],[410,400],[540,435],[630,375],[770,405],[890,440],[1010,370],[1130,410],[1280,390],[1430,350],[1550,405],[1690,430],[1780,395],[1970,420],[2140,370],[2300,415],[2470,410],[2600,365],[2750,415],[2900,405],[3130,410]]]},
+ {name:'Точность',tag:'короткая · экстремальная',stars:[50,85],parts:[[[0,420],[150,420],[230,420],[255,275],[270,275],[270,425],[340,425],[375,375],[405,375]],[[455,455],[520,455],[535,335],[565,335],[565,455],[650,455],[690,340],[720,340]],[[795,455],[870,455],[900,335],[930,335],[930,430],[1010,430]]]},
+ {name:'Выносливость',tag:'длинная · сложная',stars:[125,200],parts:[[[0,420],[185,420],[235,350],[275,350],[275,425],[390,425],[485,370],[605,425],[730,390]],[[785,445],[940,445],[980,350],[1005,350],[1005,440],[1130,440],[1200,360],[1340,390]],[[1400,445],[1560,445],[1640,365],[1720,415],[1790,350],[1820,350],[1820,445],[1960,445],[2070,390]],[[2135,445],[2260,445],[2330,345],[2360,345],[2360,440],[2520,440],[2640,370],[2770,420],[2910,390],[3050,400]]]}];
+// Terrain uses hard line segments (not smoothed): vertical ledges are real collision surfaces.
+for(const tr of tracks){tr.edges=[];for(const part of tr.parts){for(let i=1;i<part.length;i++)tr.edges.push({a:{x:part[i-1][0],y:part[i-1][1]},b:{x:part[i][0],y:part[i][1]}})}tr.finish=tr.parts.at(-1).at(-1)[0]-45;}
+let W=0,H=0,dpr=1,scale=1,cameraX=0,cameraY=0,selected=0,playing=false,elapsed=0,last=0,accumulator=0,best=[];
+const tireR=16, rearLX=-28,frontLX=28, wheelLY=14, MASS=1,INV_I=1/1750,GRAV=850,TOP=171.5,ENGINE=1850,ACCEL_TARGET=164.5;
+const bike={x:84,y:340,vx:0,vy:0,a:0,va:0,rear:false,front:false,rearN:0,frontN:0};
+function readBest(){try{const v=JSON.parse(localStorage.getItem('ridgeRush08')||'[]');best=Array.isArray(v)?v:[]}catch(_){best=[]}}readBest();
+function saveBest(){try{localStorage.setItem('ridgeRush08',JSON.stringify(best))}catch(_){}}
+function fmt(t){return `${String(Math.floor(t/60)).padStart(2,'0')}:${String(Math.floor(t%60)).padStart(2,'0')}.${Math.floor(t*10)%10}`}
+function resize(){W=window.innerWidth;H=window.innerHeight;dpr=Math.min(window.devicePixelRatio||1,2);canvas.width=Math.round(W*dpr);canvas.height=Math.round(H*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);scale=Math.max(.72,Math.min(1.15,W/890));}window.addEventListener('resize',resize);resize();
+const clamp=(x,min,max)=>Math.min(max,Math.max(min,x));
+function terrainY(x){let out=null;for(const e of tracks[selected].edges){const dx=e.b.x-e.a.x;if(dx<.001||x<e.a.x||x>e.b.x)continue;const t=(x-e.a.x)/dx;const y=e.a.y+(e.b.y-e.a.y)*t;if(out===null||y<out)out=y;}return out;}
+function coord(lx,ly){let c=Math.cos(bike.a),s=Math.sin(bike.a);return{x:bike.x+lx*c-ly*s,y:bike.y+lx*s+ly*c};}
+function worldVelocity(p){const rx=p.x-bike.x,ry=p.y-bike.y;return {x:bike.vx-bike.va*ry,y:bike.vy+bike.va*rx};}
+function impulse(ix,iy,p){const rx=p.x-bike.x,ry=p.y-bike.y;bike.vx+=ix;bike.vy+=iy;bike.va+=(rx*iy-ry*ix)*INV_I;}
+function circleEdge(p,e,r){const vx=e.b.x-e.a.x,vy=e.b.y-e.a.y;const len2=vx*vx+vy*vy;if(len2<1)return null;const t=clamp(((p.x-e.a.x)*vx+(p.y-e.a.y)*vy)/len2,0,1),qx=e.a.x+vx*t,qy=e.a.y+vy*t;
+ let nx=p.x-qx,ny=p.y-qy,dist=Math.hypot(nx,ny);if(dist>=r)return null;
+ // Only collide with accessible top faces and exposed vertical faces; avoid terrain interiors.
+ if(dist<.00001){nx=vy;ny=-vx;dist=Math.hypot(nx,ny)||1;}nx/=dist;ny/=dist;
+ if(Math.abs(vx)>1&&ny>0.3)return null; // no snapping up from deep underneath a platform
+ return{nx,ny,depth:r-dist,p:{x:qx,y:qy}};
+}
+function contactsFor(p,r){let arr=[];for(const e of tracks[selected].edges){if(p.x+r<Math.min(e.a.x,e.b.x)||p.x-r>Math.max(e.a.x,e.b.x)||p.y+r<Math.min(e.a.y,e.b.y)||p.y-r>Math.max(e.a.y,e.b.y))continue;const c=circleEdge(p,e,r);if(c)arr.push(c);}return arr.sort((a,b)=>b.depth-a.depth).slice(0,2);}
+function solveContact(p,c,dt,kind){
+ const rx=p.x-bike.x,ry=p.y-bike.y,nx=c.nx,ny=c.ny;
+ const vel=worldVelocity(p),vn=vel.x*nx+vel.y*ny;
+ const lever=rx*ny-ry*nx,eff=1+lever*lever*INV_I;
+ const correct=Math.min(180,c.depth*.17/dt);
+ const j=Math.min(160,Math.max(0,(correct-vn)/eff));
+ impulse(j*nx,j*ny,p);
+ // A ground contact is defined by an upward facing normal. Vertical walls do NOT power the rear wheel.
+ const tx=-ny,ty=nx,groundLike=ny<-.28;
+ const v2=worldVelocity(p),vt=v2.x*tx+v2.y*ty;
+ const lt=rx*ty-ry*tx,teff=1+lt*lt*INV_I;
+ let drive=0;
+ if(kind==='rear'&&keys.gas&&groundLike){
+   // First-gear strength at low wheel speed, then a progressive power falloff.
+   const speedRatio=clamp(Math.max(0,vt)/TOP,0,1);
+   drive=Math.min(ENGINE*(1-.78*speedRatio)*dt/(4*teff), ACCEL_TARGET*dt/(4*teff));
+   if(vt>TOP)drive=0;
+ }
+ const braking=(kind==='rear'?keys.rearBrake:keys.frontBrake);
+ const brakeRate=kind==='front'?900:650;
+ const brakeImpulse=braking?-clamp(vt,-brakeRate*dt/4,brakeRate*dt/4)/teff:0;
+ // Grip is related to actual normal reaction, not a fixed 1.1 impulse cap.
+ // Static traction supports steep inclines, but still slips if overpowered.
+ const grip=groundLike?Math.max(.65,Math.min(26,j*5.5+0.32)) : Math.max(.1,Math.min(6,j*0.55));
+ const rollingDrag=!braking?-vt/teff*.012:0;
+ const tangentImpulse=clamp(drive+brakeImpulse+rollingDrag,-grip,grip);
+ impulse(tangentImpulse*tx,tangentImpulse*ty,p);
+ return j;
+}
+function step(dt){if(!playing)return;elapsed+=dt;
+ // Direct rider input changes balance and pitch in flight, not world x velocity.
+ const lean=(keys.leanForward?1:0)-(keys.leanBack?1:0);
+ bike.va+=lean*(bike.rear||bike.front?6.0:7.3)*dt;
+ bike.vy+=GRAV*dt;bike.vx*=1-.036*dt;bike.va*=1-.34*dt;
+ bike.x+=bike.vx*dt;bike.y+=bike.vy*dt;bike.a+=bike.va*dt;
+ bike.rear=false;bike.front=false;bike.rearN=0;bike.frontN=0;
+ // Multiple sequential impulses improve convergence at ledges and vertical walls.
+ for(let pass=0;pass<4;pass++){
+   for(const [lx,kind] of [[rearLX,'rear'],[frontLX,'front']]){
+     const p=coord(lx,wheelLY);const contacts=contactsFor(p,tireR);
+     for(const c of contacts){let normal=solveContact(p,c,dt,kind);
+       if(c.ny<-.25){if(kind==='rear'){bike.rear=true;bike.rearN+=normal}else{bike.front=true;bike.frontN+=normal}}
+       // A small positional correction, capped and directed along contact normal.
+       const correction=Math.min(2.4,c.depth*.20);bike.x+=c.nx*correction;bike.y+=c.ny*correction;
+     }
+   }
+ }
+ // Helmet and body collision; bike can genuinely fall. Multiple segments work on steep vertical walls.
+ const helmet=coord(-8,-43),seat=coord(-3,-20);
+ if(contactsFor(helmet,10).some(c=>c.depth>1.5)||contactsFor(seat,9).some(c=>c.depth>7)||Math.abs(bike.a)>Math.PI*2.4||bike.y>820||bike.x<-80){end(false,'Удар или падение');return;}
+ if(bike.x>=tracks[selected].finish){end(true);return;}
+ bike.vx=clamp(bike.vx,-85,TOP);bike.vy=clamp(bike.vy,-900,850);bike.va=clamp(bike.va,-7,7);
+ // Keep physics numerically stable without providing horizontal momentum.
+ if(!Number.isFinite(bike.x+bike.y+bike.vx+bike.va))restart();
+}
+function clearKeys(){for(const k of Object.keys(keys))keys[k]=false;document.querySelectorAll('[data-key]').forEach(b=>b.classList.remove('held'));}
+function drawLevels(){const root=$('levels');root.replaceChildren();tracks.forEach((l,i)=>{let b=document.createElement('button');b.className=i===selected?'selected':'';b.innerHTML=`${i+1}<small>${best[i]?fmt(best[i]):'—'}</small>`;b.title=l.name;b.onclick=()=>{selected=i;showMenu();};root.append(b)})}
+function showMenu(){playing=false;clearKeys();$('overlay').hidden=false;$('headline').textContent='🏍️ RIDGE RUSH 0.8';$('message').textContent='Задний привод и два тормоза из 0.6. Лимиты скорости и разгона: 70% значений 0.4.';$('leveldetails').textContent=`${selected+1}. ${tracks[selected].name} — ${tracks[selected].tag}, ${tracks[selected].finish} м`;$('start').textContent='ПОЕХАЛИ!';$('next').hidden=true;drawLevels()}
+function restart(){const y=terrainY(84)??420;Object.assign(bike,{x:84,y:y-33,vx:0,vy:0,a:0,va:0,rear:false,front:false,rearN:0,frontN:0});elapsed=0;playing=true;clearKeys();$('overlay').hidden=true;cameraX=bike.x-W*.28/scale;cameraY=bike.y-H*.52/scale;accumulator=0;}
+function end(win,reason){if(!playing)return;playing=false;clearKeys();$('overlay').hidden=false;const l=tracks[selected];if(win){const record=!best[selected]||elapsed<best[selected];if(record){best[selected]=elapsed;saveBest()}$('headline').textContent='🏁 ФИНИШ';$('message').textContent=`Трасса «${l.name}». Время ${fmt(elapsed)}. ${record?'Новый рекорд!':'Рекорд: '+fmt(best[selected])}`;$('start').textContent='ПОВТОРИТЬ';$('next').hidden=selected===tracks.length-1;}else{$('headline').textContent='💥 ПАДЕНИЕ';$('message').textContent=`${reason||'Неудачное приземление'}. Пройдено ${Math.max(0,Math.round(bike.x))} м из ${l.finish} м.`;$('start').textContent='ЕЩЁ РАЗ';$('next').hidden=true;}drawLevels()}
+function render(){ctx.clearRect(0,0,W,H);ctx.fillStyle='#9ec9e5';ctx.fillRect(0,0,W,H);
+ cameraX+=(bike.x-W*.29/scale-cameraX)*.105;cameraY+=(bike.y-H*.52/scale-cameraY)*.075;
+ ctx.save();ctx.scale(scale,scale);ctx.translate(-cameraX,-cameraY);let left=cameraX-100,right=cameraX+W/scale+100;
+ ctx.fillStyle='#83b6c5';ctx.beginPath();ctx.moveTo(left,1000);for(let x=left;x<=right+35;x+=25)ctx.lineTo(x,230+36*Math.sin(x*.003)+15*Math.sin(x*.012));ctx.lineTo(right,1000);ctx.fill();
+ for(const part of tracks[selected].parts){const a=part[0],b=part.at(-1);if(b[0]<left||a[0]>right)continue;ctx.beginPath();ctx.moveTo(a[0],1000);ctx.lineTo(a[0],a[1]);for(let i=1;i<part.length;i++)ctx.lineTo(part[i][0],part[i][1]);ctx.lineTo(b[0],1000);ctx.closePath();ctx.fillStyle='#3f644b';ctx.fill();ctx.beginPath();ctx.moveTo(a[0],a[1]);for(let i=1;i<part.length;i++)ctx.lineTo(part[i][0],part[i][1]);ctx.lineWidth=7;ctx.lineJoin='miter';ctx.strokeStyle='#b4d77a';ctx.stroke();}
+ const finish=tracks[selected].finish, fy=terrainY(finish)||420;ctx.fillStyle='#f7bc63';ctx.fillRect(finish,fy-85,5,85);ctx.beginPath();ctx.moveTo(finish+5,fy-83);ctx.lineTo(finish+55,fy-67);ctx.lineTo(finish+5,fy-51);ctx.fill();
+ ctx.save();ctx.translate(bike.x,bike.y);ctx.rotate(bike.a);
+ function wheel(x,active){ctx.fillStyle='#1a2533';ctx.beginPath();ctx.arc(x,wheelLY,tireR,0,Math.PI*2);ctx.fill();ctx.strokeStyle=active?'#ffd079':'#dfe8e9';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,wheelLY,10,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#8ba0b5';ctx.beginPath();ctx.arc(x,wheelLY,3.5,0,Math.PI*2);ctx.fill();}
+ wheel(rearLX,bike.rear);wheel(frontLX,bike.front);
+ ctx.strokeStyle='#ed743a';ctx.lineWidth=5.7;ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(rearLX,wheelLY);ctx.lineTo(-10,-7);ctx.lineTo(10,wheelLY);ctx.lineTo(rearLX,wheelLY);ctx.lineTo(22,-7);ctx.lineTo(frontLX,wheelLY);ctx.stroke();
+ ctx.strokeStyle='#253949';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(-12,-13);ctx.lineTo(2,-13);ctx.moveTo(22,-7);ctx.lineTo(31,-12);ctx.stroke();
+ ctx.strokeStyle='#23313e';ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(-8,-28);ctx.lineTo(-18,-17);ctx.lineTo(-3,0);ctx.moveTo(-13,-25);ctx.lineTo(9,-13);ctx.lineTo(24,-10);ctx.stroke();
+ ctx.strokeStyle='#e85f4b';ctx.lineWidth=11;ctx.beginPath();ctx.moveTo(-8,-40);ctx.lineTo(-8,-27);ctx.stroke();ctx.fillStyle='#efbd96';ctx.beginPath();ctx.arc(-8,-49,10,0,2*Math.PI);ctx.fill();ctx.fillStyle='#ffbb4b';ctx.beginPath();ctx.arc(-8,-51,12,Math.PI,Math.PI*2);ctx.lineTo(3,-49);ctx.lineTo(-18,-49);ctx.fill();ctx.restore();ctx.restore();
+ $('levelhud').textContent=`${selected+1} / ${tracks.length}`;$('time').textContent=fmt(elapsed);$('best').textContent=best[selected]?fmt(best[selected]):'—';$('speed').textContent=`${Math.round(Math.abs(bike.vx)*.22)} км/ч`;$('bar').style.width=`${clamp((bike.x-84)/(finish-84)*100,0,100)}%`;
+ $('rear').textContent=bike.rear?'контакт':'нет сцепления';$('front').textContent=bike.front?'контакт':'в воздухе';}
+function tick(t){const dt=Math.min(.05,(t-last)/1000||0);last=t;if(playing){accumulator+=dt;let count=0;while(accumulator>=1/120&&count<7){step(1/120);accumulator-=1/120;count++}}render();requestAnimationFrame(tick)}requestAnimationFrame(tick);
+window.addEventListener('keydown',e=>{if(e.code==='KeyR'){e.preventDefault();restart();return}if(e.code==='Escape'){e.preventDefault();showMenu();return}const k=keymap[e.code];if(k){e.preventDefault();if(playing)keys[k]=true}});
+window.addEventListener('keyup',e=>{const k=keymap[e.code];if(k){e.preventDefault();keys[k]=false}});window.addEventListener('blur',clearKeys);document.addEventListener('visibilitychange',()=>{if(document.hidden)clearKeys()});
+for(const b of document.querySelectorAll('[data-key]')){const k=b.dataset.key;const down=e=>{e.preventDefault();if(!playing)return;try{b.setPointerCapture(e.pointerId)}catch(_){}keys[k]=true;b.classList.add('held')};const up=e=>{e.preventDefault();keys[k]=false;b.classList.remove('held')};b.addEventListener('pointerdown',down);b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up);b.addEventListener('lostpointercapture',up);}
+$('start').onclick=restart;$('menu').onclick=showMenu;$('reset').onclick=restart;$('next').onclick=()=>{selected=Math.min(selected+1,4);restart()};bike.y=350;window.ridgeTestState=()=>({x:bike.x,y:bike.y,vx:bike.vx,a:bike.a,va:bike.va,rear:bike.rear,front:bike.front,playing,level:selected,elapsed});showMenu();
+})();
+</script></body></html>
