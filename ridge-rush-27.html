@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,viewport-fit=cover,user-scalable=no"><meta name="theme-color" content="#0c1b30"><title>RIDGE RUSH 2.7 | LEVEL TEST</title>
+<style>
+/* Game UI must never trigger native text selection, magnifier, callout, or tap highlight. */
+html, body, body *, body *::before, body *::after {
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+button, canvas, #controls, #controls * { touch-action: none; }
+
+*{box-sizing:border-box}html,body{height:100%;margin:0;overflow:hidden}body{background:#0d2037;color:#fff;font-family:system-ui,Arial,sans-serif;touch-action:none;user-select:none;-webkit-user-select:none}canvas{display:block;width:100vw;height:100dvh;touch-action:none}#hud{position:fixed;top:env(safe-area-inset-top,8px);left:10px;right:10px;display:flex;align-items:start;gap:8px;pointer-events:none}#hud .cell{background:#0c1a30df;border:1px solid #ffffff2a;border-radius:11px;padding:7px 12px;min-width:68px}small{display:block;font-size:9px;color:#a7c5df;font-weight:700;letter-spacing:.09em}strong{font-size:17px;font-weight:900}#buttons{position:fixed;right:10px;top:78px;display:flex;gap:6px}button{font-family:inherit;color:#fff;background:#18334dcc;border:1px solid #ffffff40;padding:10px 13px;border-radius:12px;font-weight:800;cursor:pointer;touch-action:none}button:active,.active{background:#ffb35c!important;color:#18283b!important}#controls{position:fixed;bottom:max(12px,env(safe-area-inset-bottom,12px));left:8px;right:8px;display:flex;justify-content:space-between;pointer-events:none;gap:8px}.set{display:flex;gap:6px;pointer-events:auto}.key{height:clamp(56px,13vh,78px);width:clamp(49px,13vw,84px);padding:5px;font-size:23px;box-shadow:0 5px 18px #06131c60}.key span{display:block;font-size:9px;line-height:1.2}#panelwrap{position:fixed;inset:0;background:#071325d6;display:grid;place-items:center;padding:18px;backdrop-filter:blur(7px)}#panel{border:1px solid #ffffff33;border-radius:22px;background:#14283d;max-width:520px;width:100%;padding:25px;text-align:center;box-shadow:0 30px 80px #0009}#panel h1{margin:0 0 9px;font-size:clamp(23px,6vw,34px)}#panel p{color:#c1d7e8;line-height:1.5;font-size:14px}#play{background:#ffad50;color:#14263b;font-size:19px;border:0;padding:14px 24px;margin:12px 0}#play:disabled{opacity:.5}#note{font-size:12px;color:#adcbe0}#error{color:#ffb9a3;font-size:12px;overflow-wrap:anywhere}#panelwrap[hidden]{display:none!important}#progress{position:fixed;left:10px;top:69px;height:4px;background:#ffffff30;border-radius:2px;width:38%;pointer-events:none}#fill{height:100%;width:0;background:#fcb761}#callout{position:fixed;top:100px;left:50%;transform:translateX(-50%);background:#102d43df;color:#ffd8a5;padding:8px 14px;border-radius:12px;opacity:0;transition:.2s;white-space:nowrap;pointer-events:none}#callout.visible{opacity:1}@media(max-width:610px){#hud{gap:5px;left:6px;right:6px}#hud .cell{padding:6px 8px;min-width:0}#hud strong{font-size:14px}#buttons{top:78px;right:7px}#progress{top:64px}#controls{left:5px;right:5px;gap:4px}.set{gap:4px}.key{font-size:21px;width:clamp(46px,15vw,72px)}.key span{font-size:8px}}
+
+/* Ridge Rush 1.5: dedicated physical throttle and brakes. */
+#controls{bottom:max(10px,env(safe-area-inset-bottom,10px));left:max(10px,env(safe-area-inset-left,10px));right:max(10px,env(safe-area-inset-right,10px));align-items:end;gap:16px;z-index:5}
+.leanpad{display:flex;gap:9px;pointer-events:auto;align-items:end}
+.key.lean{width:clamp(80px,15vw,125px);height:clamp(70px,18vh,112px);border-radius:18px;font-size:30px;background:#18344de8;touch-action:none}
+.key.lean span{font-size:10px;margin-top:3px}
+.drivewrap{pointer-events:auto}
+#drivepad{width:clamp(148px,26vw,215px);height:clamp(114px,28vh,156px);border-radius:22px;background:#f6a94aeb;border:2px solid #ffdc9a;display:flex;flex-direction:column;justify-content:space-between;text-align:center;color:#192b3b;touch-action:none;cursor:pointer;box-shadow:0 4px 24px #091a2f99;padding:9px;transition:background .08s}
+#drivepad.drive-rear{background:#7ab9d9}#drivepad.drive-front{background:#f18e81}
+.drivehint,.drivebottom{font-weight:800;font-size:clamp(9px,1.9vw,11px)}.drivecenter{display:flex;align-items:center;justify-content:center;gap:8px}.drivecenter strong{font-size:26px}.drivecenter span{font-size:17px;font-weight:900}
+#orient{position:fixed;left:50%;top:57px;transform:translateX(-50%);background:#091b30ed;border:1px solid #ffffff44;border-radius:12px;padding:8px 14px;z-index:7;font-size:12px;white-space:nowrap;pointer-events:none}
+#orient[hidden]{display:none}
+@media(max-width:610px){.key.lean{width:clamp(68px,19vw,100px);height:clamp(66px,19vh,90px)}#drivepad{width:clamp(126px,32vw,176px);height:clamp(105px,29vh,140px)}.drivecenter span{font-size:14px}.drivehint,.drivebottom{font-size:9px}#controls{gap:7px}}
+@media(orientation:portrait) and (max-width:700px){#orient{display:block}#controls{bottom:18px}.leanpad{gap:3px}.key.lean{width:17vw;height:66px;font-size:22px}.key.lean span{font-size:8px}#drivepad{width:36vw;height:120px}}
+@media(max-height:400px){#buttons{top:43px}#controls{bottom:5px}.key.lean{height:64px}#drivepad{height:105px}#hud .cell{padding:4px 8px}#progress{top:52px}}
+#levels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:12px 0;max-height:42vh;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y}
+.levelbtn{padding:9px 7px;text-align:left;font-size:12px;line-height:1.3;border:1px solid #ffffff35;background:#234057}
+.levelbtn.chosen{border:2px solid #ffc06c;background:#3f5160}
+.levelbtn small{display:block;letter-spacing:0;font-size:10px;margin-top:4px}
+#panel{max-height:94dvh;overflow-y:auto;touch-action:pan-y}
+@media(max-height:450px){#levels{grid-template-columns:repeat(3,minmax(0,1fr));max-height:32vh}.levelbtn{padding:6px}}
+
+body:not(.in-game) #controls,body:not(.in-game) #hud,body:not(.in-game) #progress,
+body:not(.in-game) #buttons,body:not(.in-game) #callout,body:not(.in-game) #orient{display:none!important}
+/* All touch targets stay separate and can be held independently. */
+.drivewrap{display:flex;align-items:flex-end;gap:8px;pointer-events:auto}
+#drivepad{width:clamp(95px,18vw,165px);height:clamp(72px,18vh,105px);border-radius:17px;
+ display:flex;align-items:center;justify-content:center;background:#efa846;color:#20283a;padding:5px}
+#drivepad .drivehint,#drivepad .drivebottom{display:none}
+#drivepad .drivecenter strong{font-size:25px}
+#drivepad .drivecenter span{font-size:18px}
+.brake-col{display:flex;flex-direction:column;gap:7px}
+.key.brake{width:clamp(68px,11vw,100px);height:clamp(34px,9vh,52px);border-radius:12px;
+ font-size:12px;line-height:1.15;padding:4px;background:#254860ea}
+#controls .key{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+@media(max-width:660px){.drivewrap{gap:4px}.key.brake{width:clamp(55px,14vw,80px);font-size:10px}
+ #drivepad{width:clamp(76px,20vw,120px);height:clamp(70px,20vh,90px)}
+ .key.lean{width:clamp(56px,17vw,91px);height:clamp(69px,19vh,90px)}}
+@media(orientation:portrait) and (max-width:700px){#drivepad{width:22vw;height:74px}.key.brake{width:15vw;height:36px}
+ .key.lean{width:17vw;height:69px}}
+
+/* 1.7: larger, easier-to-hit tilt controls. No gameplay physics changes. */
+.key.lean{width:clamp(96px,17vw,145px);height:clamp(98px,25vh,145px);min-height:98px;font-size:34px;border-radius:20px}
+.key.lean span{font-size:11px}
+@media (max-width:660px){
+  .leanpad{gap:7px}
+  .key.lean{width:clamp(72px,19vw,112px);height:clamp(94px,27vh,122px);min-height:94px;font-size:29px}
+  .key.lean span{font-size:9px}
+}
+@media (orientation:portrait) and (max-width:700px){
+  .key.lean{width:clamp(62px,21vw,98px);height:clamp(96px,16vh,122px);min-height:96px;font-size:28px}
+}
+@media (orientation:landscape) and (max-height:400px){
+  .key.lean{height:clamp(94px,32vh,116px);min-height:94px}
+}
+
+/* 1.9: explicit stable sizing for landscape touch controls.
+   Avoid CSS calc multiplication / implicit grid placement on iOS. */
+#controls{--gas-size:82px;--front-height:94px;--rear-width:112px;bottom:max(6px,env(safe-area-inset-bottom,6px));align-items:flex-end;gap:12px}
+.leanpad{gap:7px;align-items:flex-end}
+.key.lean{width:84px;height:90px;min-width:0;min-height:0;font-size:26px;border-radius:15px}
+.key.lean span{font-size:9px}
+.drivewrap{display:grid;position:relative;grid-template-columns:var(--rear-width) var(--gas-size);grid-template-rows:var(--front-height) var(--gas-size);gap:7px;align-items:stretch;justify-items:stretch;pointer-events:auto;width:auto;height:auto}
+#drivepad{grid-column:2;grid-row:2;position:relative;width:var(--gas-size);height:var(--gas-size);min-width:0;min-height:0;max-width:none;max-height:none;border-radius:16px;padding:5px;margin:0;aspect-ratio:1 / 1;transform:none;box-shadow:0 4px 16px #091a2f99}
+#drivepad .drivecenter{flex-direction:column;gap:2px}
+#drivepad .drivecenter strong{font-size:23px;line-height:1}
+#drivepad .drivecenter span{font-size:15px}
+.key.brake{position:relative;min-width:0;min-height:0;max-width:none;max-height:none;line-height:1.12;padding:5px;font-size:11px;border-radius:13px;transform:none}
+.key.brake.front-brake{grid-column:2;grid-row:1;align-self:stretch;justify-self:center;width:85%;height:100%;background:rgba(214,65,62,.65);border-color:rgba(255,165,160,.85)}
+.key.brake.rear-brake{grid-column:1;grid-row:2;align-self:end;justify-self:stretch;width:100%;height:40px;background:rgba(116,126,140,.63);border-color:rgba(210,216,222,.55)}
+#controls button{appearance:none;-webkit-appearance:none;outline:none;-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important;-webkit-tap-highlight-color:transparent!important}
+@media(orientation:landscape) and (max-height:450px){
+ #controls{--gas-size:76px;--front-height:84px;--rear-width:106px;bottom:5px}
+ .key.lean{width:78px;height:82px;min-height:0}
+}
+@media(orientation:portrait) and (max-width:700px){
+ #controls{--gas-size:65px;--front-height:75px;--rear-width:80px;gap:7px;bottom:10px}
+ .key.lean{width:17vw;height:78px;min-height:0}
+ .key.brake{font-size:9px}
+}
+@media(max-width:700px) and (orientation:landscape){
+ #controls{--gas-size:64px;--front-height:70px;--rear-width:80px}
+ .key.lean{width:62px;height:72px;min-height:0}
+ .key.brake{font-size:9px}
+}
+
+/* 2.0: unified HUD, including both menu controls, all on one horizontal rail. */
+#hud{position:fixed;top:max(6px,env(safe-area-inset-top,6px));left:max(8px,env(safe-area-inset-left,8px));right:max(8px,env(safe-area-inset-right,8px));display:flex;align-items:stretch;gap:7px;z-index:9;pointer-events:none}
+#hud .cell,#hud #buttons button{border:1px solid #ffffff30;border-radius:12px;background:#102139de;padding:7px 10px;display:flex;flex-direction:column;justify-content:center;min-height:57px;white-space:nowrap}
+#hud .cell{flex:1 1 0;min-width:0}
+#hud small,#hud #buttons small{font-size:clamp(8px,.85vw,11px);line-height:1.1;color:#b1cadd;letter-spacing:.04em}
+#hud strong,#hud #buttons strong{font-size:clamp(12px,1.5vw,19px);line-height:1.25;color:white}
+#hud #buttons{position:static;display:flex;flex:2 1 0;min-width:0;gap:7px;pointer-events:auto}
+#hud #buttons button{flex:1 1 0;min-width:0;text-align:center;align-items:center;cursor:pointer;touch-action:manipulation}
+#progress{top:calc(max(6px,env(safe-area-inset-top,6px)) + 64px);width:42%;left:max(8px,env(safe-area-inset-left,8px))}
+#controls, #controls *,#hud,#hud *,#panelwrap,#panelwrap *{user-select:none!important;-webkit-user-select:none!important;-webkit-touch-callout:none!important;-webkit-tap-highlight-color:transparent!important}
+#controls button, #controls button *{touch-action:none!important}
+#controls button::selection,#controls button *::selection,#hud *::selection{background:transparent;color:inherit}
+#controls button:focus,#hud button:focus{outline:none}
+@media(max-width:780px){#hud{gap:4px}#hud .cell,#hud #buttons button{padding:5px 5px;min-height:47px;border-radius:9px}#hud #buttons{gap:4px}#hud strong,#hud #buttons strong{font-size:clamp(10px,1.8vw,15px)}#hud small,#hud #buttons small{font-size:8px}#progress{top:calc(max(6px,env(safe-area-inset-top,6px)) + 51px)}}
+@media(max-width:510px){#hud{gap:3px}#hud .cell,#hud #buttons button{padding:4px 3px;min-height:45px}#hud strong,#hud #buttons strong{font-size:10px}#hud small,#hud #buttons small{font-size:7px}}
+
+/* 2.2: left-aligned stats, right-aligned menu buttons, clear center. */
+#hud{justify-content:flex-start;align-items:stretch;gap:8px}
+#hud .cell{flex:0 0 auto;width:clamp(102px,11vw,160px);min-width:0}
+#hud #buttons{position:static;margin-left:auto;flex:0 0 auto;display:flex;gap:8px;min-width:0}
+#hud #buttons button{flex:0 0 auto;width:clamp(102px,11vw,160px);min-width:0}
+#progress{width:calc(clamp(102px,11vw,160px)*3 + 16px)}
+@media(max-width:780px){
+  #hud{gap:5px}
+  #hud .cell{width:clamp(69px,13vw,102px)}
+  #hud #buttons{gap:5px}
+  #hud #buttons button{width:clamp(67px,12vw,100px)}
+  #progress{width:calc(clamp(69px,13vw,102px)*3 + 10px)}
+}
+@media(max-width:510px){
+  #hud{gap:3px}
+  #hud .cell{width:clamp(64px,16vw,80px)}
+  #hud #buttons{gap:3px}
+  #hud #buttons button{width:clamp(58px,14vw,72px)}
+  #progress{width:calc(clamp(64px,16vw,80px)*3 + 6px)}
+}
+
+/* 2.4: front brake label fits inside narrow mobile control */
+#controls .key.brake.front-brake{
+  display:flex;align-items:center;justify-content:center;text-align:center;
+  font-size:clamp(8px,0.8vw,10px);line-height:1.12;
+  padding:3px 2px;overflow:hidden;overflow-wrap:anywhere;
+  word-break:normal;white-space:normal;
+}
+@media (max-width:700px) and (orientation:landscape){
+  #controls .key.brake.front-brake{font-size:8px;letter-spacing:-0.25px;padding:2px 1px;}
+}
+
+/* 2.6: stable, full-viewport layers during Safari orientation changes. */
+html,body{width:100%;height:100%;overflow:hidden;}
+#game{position:fixed;inset:0;display:block;width:100%;height:100%;max-width:none;}
+#panelwrap{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;z-index:20;}
+body.in-game #panelwrap{display:none!important;}
+body:not(.in-game) #panelwrap:not([hidden]){display:grid!important;}
+body:not(.in-game) #controls,body:not(.in-game) #hud,
+body:not(.in-game) #progress{display:none!important;}
+
+/* 2.7: scrollable 30-level selector, without shrinking the ride controls */
+#levels{max-height:min(46dvh,340px);scrollbar-width:thin;scrollbar-color:#6c91a5 #172c3e}
+.levelbtn{min-height:45px}
+#panel{max-width:640px}
+@media(max-height:450px){#levels{max-height:37dvh;grid-template-columns:repeat(3,minmax(0,1fr))}#panel{padding:12px 17px}#panel p{margin:5px 0;font-size:12px}#play{margin:5px 0;padding:9px 18px}}
+</style></head><body>
+<canvas id="game"></canvas>
+<div id="hud"><div class="cell"><small>ВРЕМЯ</small><strong id="time">00:00.0</strong></div><div class="cell"><small>СКОРОСТЬ</small><strong id="speed">0 км/ч</strong></div><div class="cell"><small>ДИСТАНЦИЯ</small><strong id="dist">0 м</strong></div><div id="buttons"><button id="restart" aria-label="Рестарт"><strong>Рестарт</strong></button><button id="menu" aria-label="Меню"><strong>Меню</strong></button></div></div>
+<div id="progress"><div id="fill"></div></div>
+<div id="controls" aria-label="Управление во время заезда">
+  <div class="leanpad" aria-label="Управление балансом">
+    <button class="key lean" data-k="back" aria-label="Нос вверх">↶<span>НОС ВВЕРХ</span></button>
+    <button class="key lean" data-k="forward" aria-label="Нос вниз">↷<span>НОС ВНИЗ</span></button>
+  </div>
+  <div class="drivewrap" aria-label="Газ и независимые тормоза">
+    <button class="key brake front-brake" data-k="frontBrake">ПЕРЕДНИЙ<br>ТОРМОЗ</button>
+    <button class="key brake rear-brake" data-k="rearBrake">ЗАДНИЙ<br>ТОРМОЗ</button>
+    <button id="drivepad" data-k="gas" aria-label="Газ"><div class="drivecenter"><strong>▶</strong><span>ГАЗ</span></div></button>
+  </div>
+</div>
+<div id="orient" hidden>↻ Поверни телефон горизонтально — так удобнее управлять</div>
+
+<div id="callout"></div>
+<div id="panelwrap"><div id="panel"><h1 id="title">🏍️ RIDGE RUSH 2.7</h1><p id="message">30 трасс: короткие экстремальные, длинные марафоны, синусоидальные подъёмы и технические прыжки. Выбирай любую для теста.</p><div id="levels" aria-label="Выбор трассы"></div><button id="play" disabled>Загрузка движка…</button><div id="error"></div></div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/planck-js/1.5.0/planck.min.js"></script>
+<script>
+(()=>{'use strict';
+const q=s=>document.getElementById(s),cv=q('game'),g=cv.getContext('2d');
+const pressed={gas:false,back:false,forward:false,rearBrake:false,frontBrake:false};
+const keyMap={KeyD:'gas',ArrowRight:'gas',KeyA:'rearBrake',ArrowLeft:'rearBrake',KeyS:'frontBrake',Space:'frontBrake',KeyW:'back',ArrowUp:'back',KeyE:'forward',ArrowDown:'forward'};
+let world,frame,rear,front,rearJoint,frontJoint,headFixture,playing=false,elapsed=0,won=false,dead=false,camera={x:0,y:0};
+let throttleHold=0; // initial throttle ramp, seconds
+const P=window.planck,Vec=P&&P.Vec2;let terrain=[];
+// Each level is an independent Box2D edge course, in metres (y increases down).
+// Every gap is deliberate; no overlapping or backward-running terrain edges.
+const LEVELS=[
+ {name:'Тренировка',kind:'Средняя · 65 м',finish:62,paths:[
+  [[0,8],[4.7,8],[7.9,7.1],[10.4,7.1],[12.5,8],[15,8],[16.6,7.45],[18.1,7.45],[18.1,6.85],[20.8,6.85],[22.4,8]],
+  [[25.2,8],[27,8],[30.4,6.65],[33.4,6.65],[35.2,7.8],[40,7.8],[42.5,8.35],[47.5,8.35],[50,7.15],[53,7.15],[57,8],[65,8]]]},
+ {name:'Короткий ад',kind:'Сложная · 48 м',finish:47,paths:[
+  [[0,8],[5,8],[7.2,6.85],[8.7,6.85],[10.0,8.3],[12,8.3],[13.1,6.9],[14.6,6.9],[14.6,6.35],[17,6.35],[18.2,8.4],[20.4,8.4]],
+  [[22.2,8.3],[23.2,8.3],[24.5,6.6],[26.1,6.6],[27.2,7.9],[28.5,7.9],[28.5,6.9],[30.0,6.9],[32,8]],
+  [[34,8],[35.0,7.5],[36,7.5],[37.0,6.4],[39,6.4],[40,8.2],[48,8.2]]]},
+ {name:'Марафон',kind:'Длинная, очень сложная · 190 м',finish:189,paths:[
+  // Harder marathon: steep ridges, short technical plateaus, three real launch ramps.
+  [[0,8],[5,8],[7.5,6.95],[9.3,6.95],[11.8,8.75],[14.1,8.75],
+   [16.0,7.0],[18.3,7.0],[20.0,8.35],[22.2,8.35],
+   [23.9,6.65],[26.0,6.65],[28.1,8.55],[30.0,8.55],
+   [31.2,7.35],[32.9,7.35],[34.0,6.55],[36.1,6.55],[38.0,8.65],
+   [42.0,8.65],[43.5,7.3],[45.7,7.3],[47.1,8.35],[49.2,8.35],
+   [50.4,7.15],[52.0,7.15],[53.0,8.15],[54.2,8.15],
+   // Jump 1: 3.2m gap, 2.7m runup ramp / +1.0m, lower landing.
+   [55.3,7.8],[58,6.8]],
+  [[61.2,7.6],[64.2,7.6],[65.9,8.65],[68.5,8.65],
+   [70.0,7.2],[72.0,7.2],[73.1,6.45],[75.3,6.45],[77.1,8.45],
+   [80.4,8.45],[81.8,7.25],[83.8,7.25],[84.7,6.65],[86.4,6.65],
+   [88.4,8.55],[91.0,8.55],[92.2,7.4],[94.0,7.4],
+   // Jump 2: 3.5m gap, +1.05m ramp, 0.8m landing drop.
+   [95.0,7.9],[97.6,6.85]],
+  [[101.1,7.65],[104.0,7.65],[105.7,8.75],[108.0,8.75],
+   [109.3,7.25],[111.1,7.25],[112.3,6.35],[114.0,6.35],
+   [116.0,8.5],[119.0,8.5],[120.5,7.3],[122.7,7.3],
+   [124.0,8.65],[127.0,8.65],[128.4,7.15],[130.2,7.15],
+   [131.1,6.55],[133.0,6.55],[135.1,8.7],[137.0,8.7],
+   [138.4,7.35],[140.5,7.35],[141.9,8.35],[144.3,8.35],
+   // Jump 3: 3.65m gap, strong ramp / +1.1m and 0.9m landing drop.
+   [147.3,7.9],[150.2,6.8]],
+  [[153.85,7.7],[157.0,7.7],[158.6,8.7],[161.1,8.7],
+   [162.6,7.15],[164.5,7.15],[165.5,6.5],[167.5,6.5],
+   [169.4,8.65],[172.2,8.65],[173.4,7.45],[175.1,7.45],
+   [176.0,6.75],[178.0,6.75],[180.0,8.55],
+   [182.0,8.55],[183.4,7.25],[185.5,7.25],[187.3,8.1],[193,8.1]]]},
+ {name:'Прыжки',kind:'Средняя · 94 м',finish:92,paths:[
+  [[0,8],[6,8],[9.5,6.8],[12.0,6.8],[14.0,8.0],[16,8.0],[18.2,6.9],[20.1,6.9]],
+  [[23.2,8],[26,8],[28.3,6.5],[30.0,6.5],[32,8],[37,8],[39.0,6.9],[41.2,6.9]],
+  [[45,8.1],[48,8.1],[51,7.1],[55,7.1],[58,8.1],[62,8.1],[64,6.5],[66.5,6.5]],
+  [[70,8],[75,8],[78,7.1],[81,7.1],[84,8],[95,8]]]},
+ {name:'Баланс',kind:'Техническая · 76 м',finish:74,paths:[
+  [[0,8],[5.5,8],[7.2,7.4],[9.5,7.4],[11,8.8],[14,8.8],[15.8,7.0],[17.5,7.0],[17.5,6.45],[19,6.45]],
+  [[20.9,7.8],[23.3,7.8],[24.6,6.5],[27,6.5],[28.4,8.5],[31.2,8.5],[32.4,7.1],[34.0,7.1],[34.0,6.55],[36.2,6.55],[38.3,8]],
+  [[41,8],[43.2,8],[44.4,7.25],[46.5,7.25],[48,8.65],[51,8.65],[52.5,6.8],[54.2,6.8],[56,8.3],[60,8.3],[62,7.2],[64,7.2],[66,8],[77,8]]]},
+{"name":"Игла","kind":"Короткая · экстремальная","finish":44,"paths":[[[0.0,8.0],[5.2,8.0],[6.9,8.516],[10.901,2.79],[11.902,2.79],[13.875,5.234],[15.375,5.234],[18.63,4.738],[21.376,3.963],[24.1,3.963],[25.8,4.164],[30.452,-1.206],[31.688,-1.206],[33.793,1.131],[35.293,1.131],[39.784,0.208],[43.0,0.208],[48.0,0.208]]]},{"name":"Зубья","kind":"Техническая · очень сложная","finish":86,"paths":[[[0.0,8.0],[5.2,8.0],[6.457,6.598],[7.252,6.598],[8.77,8.55],[10.135,5.551],[10.768,5.551],[12.597,8.207],[14.206,4.824],[14.865,4.824],[16.666,7.917],[19.982,8.214],[23.861,8.719],[27.066,9.191],[31.162,9.895],[31.8,9.895],[33.813,7.286],[34.735,7.286],[36.665,9.885],[37.961,8.211],[38.912,8.211],[40.796,9.889],[42.273,7.924],[43.301,7.924],[45.166,10.487],[49.536,10.331],[52.247,9.75],[54.908,10.161],[58.4,11.024],[60.272,7.767],[61.338,7.767],[63.303,11.564],[64.757,9.339],[65.811,9.339],[67.5,11.405],[69.737,9.503],[70.5,9.503],[72.713,11.307],[75.494,10.589],[78.165,10.775],[82.298,11.347],[85.0,11.347],[90.0,11.347]]]},{"name":"Бездна","kind":"Прыжковая · экстремальная","finish":68,"paths":[[[0.0,8.0],[5.2,8.0],[7.957,7.672],[10.968,7.672],[13.809,6.009]],[[16.734,6.757],[20.704,6.757],[23.418,6.712],[25.8,6.712],[28.323,7.965],[31.322,7.965],[34.435,6.653]],[[37.537,7.79],[41.673,7.79],[45.418,6.909],[46.4,6.909],[48.728,8.182],[51.385,8.182],[54.215,6.517]],[[56.929,7.403],[61.055,7.403],[65.174,6.794],[67.0,6.794],[72.0,6.794]]]},{"name":"Синусоида","kind":"Длинная · очень сложная","finish":160,"paths":[[[0.0,8.0],[5.2,8.0],[6.574,9.535],[8.136,9.518],[9.577,9.155],[11.129,8.317],[12.49,6.582],[14.101,6.069],[15.791,7.073],[17.717,7.908],[19.153,9.004],[21.114,10.052],[24.778,9.234],[27.8,8.809],[31.6,8.007],[35.128,8.348],[38.201,7.944],[41.401,8.485],[43.65,8.485],[45.192,10.098],[47.098,10.113],[48.522,9.718],[49.856,8.802],[51.743,6.988],[53.141,6.443],[54.954,7.479],[56.705,8.393],[58.073,9.567],[59.727,10.647],[64.25,10.048],[67.693,10.486],[70.642,10.78],[73.753,10.253],[77.258,10.153],[81.207,10.001],[82.1,10.001],[83.966,12.145],[85.546,12.38],[87.048,11.765],[88.435,10.318],[90.424,7.974],[91.834,7.208],[93.237,8.465],[94.583,9.909],[96.393,11.614],[98.079,12.914],[102.216,12.779],[106.572,12.797],[110.321,13.0],[114.049,13.0],[117.209,12.786],[120.55,12.786],[121.942,13.0],[123.557,13.0],[125.214,13.0],[126.907,13.0],[128.428,10.751],[130.016,9.982],[131.43,11.242],[132.8,12.694],[134.148,13.0],[135.559,13.0],[139.211,12.643],[142.938,11.829],[147.382,11.88],[150.09,12.458],[152.654,12.543],[157.075,13.0],[159.0,13.0],[164.0,13.0]]]},{"name":"Вертикаль","kind":"Короткая · экстремальная","finish":56,"paths":[[[0.0,8.0],[5.2,8.0],[6.9,8.294],[9.952,4.548],[11.623,4.548],[13.747,6.9],[15.247,6.9],[18.72,6.941],[21.745,7.438],[25.846,7.114],[29.528,6.19],[30.1,6.19],[31.8,7.013],[35.315,2.07],[36.762,2.07],[39.315,5.533],[40.815,5.533],[45.203,5.946],[48.03,5.814],[51.726,5.882],[55.0,5.882],[60.0,5.882]]]},{"name":"Ущелье","kind":"Длинная · сложная","finish":210,"paths":[[[0.0,8.0],[5.2,8.0],[9.695,11.415],[11.786,11.415],[14.036,8.916],[16.311,7.517],[18.401,5.018],[20.76,3.619],[24.587,4.518],[27.979,4.565],[31.1,3.839],[34.538,4.369],[38.534,4.41],[41.91,4.488],[45.493,4.947],[45.96,4.947],[49.487,11.27],[51.833,11.27],[54.289,9.266],[56.801,8.362],[58.613,6.358],[60.808,5.454],[64.957,5.182],[69.367,4.962],[73.657,5.204],[76.727,4.536],[79.834,4.626],[83.797,4.628],[86.72,4.628],[90.201,11.003],[92.422,11.003],[94.54,8.808],[97.328,7.713],[99.759,5.518],[102.301,4.423],[106.168,3.685],[108.806,3.52],[111.849,3.171],[115.443,3.73],[118.525,3.652],[121.601,4.156],[124.729,4.672],[127.48,4.672],[131.299,10.917],[133.625,10.917],[135.804,8.704],[138.27,7.591],[140.502,5.378],[143.043,4.265],[146.922,3.829],[150.827,2.923],[154.489,3.684],[158.934,4.605],[161.655,5.093],[165.799,4.781],[168.24,4.781],[172.32,11.118],[174.006,11.118],[176.577,9.225],[178.765,8.432],[181.316,6.539],[183.443,5.746],[185.965,6.36],[189.239,7.22],[192.422,6.698],[196.937,6.347],[199.875,6.566],[203.33,6.323],[206.826,6.617],[209.0,6.617],[214.0,6.617]]]},{"name":"Лестница","kind":"Техническая · экстремальная","finish":108,"paths":[[[0.0,8.0],[5.2,8.0],[6.213,6.796],[7.717,6.796],[8.895,5.497],[9.851,5.497],[10.744,3.977],[11.711,3.977],[14.86,7.003],[18.37,6.118],[22.316,6.456],[26.168,6.232],[29.006,6.07],[33.304,5.484],[36.695,5.137],[39.133,5.137],[39.878,3.985],[40.847,3.985],[42.036,3.023],[43.327,3.023],[44.086,1.828],[45.02,1.828],[48.088,5.3],[52.642,4.808],[55.72,4.853],[58.602,5.396],[61.328,6.174],[65.103,7.054],[69.078,7.067],[72.714,6.918],[73.066,6.918],[74.07,5.06],[75.555,5.06],[76.468,3.452],[77.225,3.452],[77.973,1.717],[79.482,1.717],[82.444,5.24],[85.499,5.39],[89.795,4.632],[93.958,5.353],[97.806,5.892],[101.495,6.477],[105.303,5.531],[107.0,5.531],[112.0,5.531]]]},{"name":"Ритм","kind":"Короткая · очень сложная","finish":72,"paths":[[[0.0,8.0],[5.2,8.0],[6.977,10.217],[8.639,10.481],[10.558,9.836],[12.518,8.317],[13.827,5.9],[15.267,5.105],[16.589,6.391],[18.133,7.908],[19.614,9.685],[20.987,11.015],[24.406,10.107],[28.373,9.251],[31.348,8.537],[35.845,8.748],[38.1,8.748],[40.001,10.665],[41.437,10.806],[43.253,10.285],[44.686,9.065],[46.274,6.948],[48.161,6.277],[50.091,7.439],[51.937,8.656],[53.517,10.134],[54.904,11.34],[58.0,11.835],[60.803,11.81],[64.547,11.699],[68.454,11.586],[71.0,11.586],[76.0,11.586]]]},{"name":"Пилорама","kind":"Длинная · экстремальная","finish":185,"paths":[[[0.0,8.0],[5.2,8.0],[6.783,5.682],[7.607,5.682],[9.874,8.415],[11.82,5.539],[12.773,5.539],[14.42,8.511],[16.372,6.139],[17.456,6.139],[19.131,8.424],[23.377,8.039],[27.949,8.219],[31.344,7.784],[33.875,8.627],[37.786,9.5],[40.96,9.5],[42.829,6.175],[43.82,6.175],[45.819,9.181],[47.82,7.243],[48.735,7.243],[50.482,9.053],[52.264,6.231],[53.121,6.231],[55.131,8.942],[58.123,9.541],[62.412,9.385],[65.622,10.114],[68.761,10.623],[71.679,11.221],[74.317,10.978],[76.72,10.978],[78.906,8.313],[79.77,8.313],[81.725,10.902],[83.398,7.99],[84.35,7.99],[86.05,11.005],[87.474,8.706],[88.259,8.706],[90.057,10.766],[93.191,10.281],[95.788,10.791],[98.921,11.149],[102.202,11.15],[106.458,11.935],[110.381,11.218],[112.48,11.218],[114.475,8.51],[115.085,8.51],[117.001,11.337],[118.948,9.429],[120.019,9.429],[121.586,11.086],[123.451,8.144],[124.144,8.144],[126.334,11.323],[129.061,12.105],[132.349,12.907],[135.33,13.0],[138.203,12.464],[142.352,11.562],[146.399,11.846],[148.24,11.846],[149.594,9.044],[150.556,9.044],[152.415,11.589],[154.658,10.134],[155.431,10.134],[157.235,11.603],[159.586,8.802],[160.477,8.802],[162.545,11.579],[166.489,12.233],[169.917,12.09],[173.033,12.186],[177.007,11.942],[180.639,11.934],[184.0,11.934],[189.0,11.934]]]},{"name":"Тройной прыжок","kind":"Прыжковая · экстремальная","finish":96,"paths":[[[0.0,8.0],[5.2,8.0],[8.421,7.216],[11.298,7.216],[14.55,5.621]],[[17.426,6.661],[21.358,6.661],[24.425,6.249],[27.65,6.249],[30.177,8.063],[32.913,8.063],[36.121,6.652]],[[39.572,7.497],[43.654,7.497],[47.586,7.605],[50.1,7.605],[53.479,8.019],[56.117,8.019],[59.236,6.453]],[[62.623,7.294],[66.534,7.294],[69.217,6.444],[72.55,6.444],[75.108,7.456],[78.315,7.456],[81.663,5.934]],[[85.251,7.042],[88.157,7.042],[92.1,7.84],[95.0,7.84],[100.0,7.84]]]},{"name":"Небоскрёб","kind":"Высотная · экстремальная","finish":125,"paths":[[[0.0,8.0],[5.2,8.0],[6.9,8.356],[12.22,2.484],[13.211,2.484],[15.696,5.113],[17.196,5.113],[20.437,5.647],[24.985,6.37],[28.146,7.039],[31.981,6.674],[34.9,6.674],[36.6,7.486],[40.706,2.175],[42.041,2.175],[44.599,4.508],[46.099,4.508],[50.468,5.229],[54.454,5.528],[57.617,4.905],[60.588,4.841],[63.551,5.625],[64.6,5.625],[66.3,6.415],[70.244,0.385],[71.838,0.385],[74.634,3.945],[76.134,3.945],[80.337,4.702],[84.441,4.999],[87.325,5.856],[90.681,4.915],[94.3,5.137],[96.0,5.73],[100.389,0.205],[101.686,0.205],[103.822,2.987],[105.322,2.987],[109.098,2.526],[111.885,1.688],[115.851,2.058],[120.356,2.136],[123.731,1.332],[124.0,1.332],[129.0,1.332]]]},{"name":"Кратер","kind":"Длинная · очень сложная","finish":172,"paths":[[[0.0,8.0],[5.2,8.0],[8.604,12.7],[10.717,12.7],[13.436,10.313],[15.407,9.026],[17.707,6.639],[19.705,5.352],[22.392,4.581],[26.892,5.29],[30.965,4.706],[34.809,5.153],[38.193,5.007],[41.429,5.793],[45.173,5.098],[46.65,5.098],[50.315,9.331],[51.882,9.331],[54.471,6.844],[57.261,5.457],[59.817,2.97],[61.905,1.583],[65.602,1.464],[68.634,1.16],[72.62,1.467],[75.509,1.869],[79.393,2.691],[82.36,2.112],[86.245,1.853],[88.1,1.853],[92.589,6.437],[94.21,6.437],[96.838,4.569],[98.725,3.801],[101.521,1.933],[103.528,1.165],[108.101,1.332],[112.19,1.492],[116.543,2.015],[120.245,1.849],[123.179,0.92],[126.888,0.987],[129.55,0.987],[133.885,4.77],[136.113,4.77],[138.627,2.247],[140.981,0.824],[143.703,-1.699],[146.35,-3.122],[150.629,-2.293],[153.662,-2.009],[157.041,-2.444],[160.507,-2.515],[164.766,-2.4],[169.309,-2.096],[171.0,-2.096],[176.0,-2.096]]]},{"name":"Острый гребень","kind":"Короткая · экстремальная","finish":52,"paths":[[[0.0,8.0],[5.2,8.0],[6.803,5.017],[7.82,5.017],[9.231,8.533],[10.528,5.618],[11.232,5.618],[12.7,8.178],[16.782,8.969],[20.985,9.524],[24.346,9.108],[27.556,8.698],[28.1,8.698],[29.39,5.937],[30.448,5.937],[32.181,9.251],[33.798,6.86],[34.738,6.86],[36.552,9.763],[40.169,8.852],[43.884,8.035],[47.167,8.011],[50.541,8.488],[51.0,8.488],[56.0,8.488]]]},{"name":"Волновой шторм","kind":"Длинная · сложная","finish":240,"paths":[[[0.0,8.0],[5.2,8.0],[6.825,9.721],[8.15,9.78],[10.06,9.341],[11.471,8.317],[13.433,6.396],[15.175,5.806],[17.027,6.887],[19.014,7.908],[20.581,9.19],[22.368,10.315],[26.133,10.02],[30.166,10.12],[34.671,9.902],[37.834,10.381],[40.743,10.17],[44.73,9.752],[48.434,8.824],[51.96,8.542],[53.882,10.869],[55.23,11.179],[56.779,10.489],[58.127,8.859],[59.844,6.332],[61.285,5.491],[62.924,6.823],[64.79,8.45],[66.677,10.338],[68.549,11.713],[71.444,10.883],[75.938,11.487],[79.739,10.915],[82.76,11.745],[86.925,12.552],[90.956,13.0],[94.869,12.088],[98.049,12.138],[98.72,12.138],[100.455,13.0],[101.908,13.0],[103.71,13.0],[105.547,12.455],[107.186,10.151],[108.904,9.402],[110.706,10.642],[112.328,12.046],[114.15,13.0],[115.984,13.0],[120.341,13.0],[123.204,13.0],[127.715,13.0],[131.729,13.0],[135.433,12.378],[138.264,11.679],[142.508,12.408],[145.48,12.408],[147.387,13.0],[149.003,13.0],[150.317,13.0],[152.055,12.725],[153.651,10.966],[155.516,10.443],[156.981,11.457],[158.296,12.316],[159.955,13.0],[161.432,13.0],[164.23,12.487],[168.509,13.0],[173.1,13.0],[176.687,12.909],[179.231,13.0],[183.784,12.682],[188.307,11.846],[192.24,11.427],[193.568,13.0],[195.164,13.0],[196.944,13.0],[198.255,11.744],[200.186,9.199],[202.069,8.351],[204.028,9.69],[205.563,11.335],[207.038,13.0],[208.486,13.0],[212.223,12.951],[216.719,12.408],[219.884,11.692],[223.912,10.855],[228.087,10.012],[231.334,10.239],[234.211,10.167],[238.143,9.459],[239.0,9.459],[244.0,9.459]]]},{"name":"Обрывистый путь","kind":"Прыжковая · очень сложная","finish":144,"paths":[[[0.0,8.0],[5.2,8.0],[7.514,7.324],[10.362,7.324],[13.515,5.788]],[[16.568,6.884],[19.386,6.884],[23.257,7.041],[27.255,6.097],[29.8,5.763],[32.76,5.763],[35.519,7.508],[38.172,7.508],[41.131,5.971]],[[44.153,6.632],[46.972,6.632],[51.132,7.271],[54.244,6.488],[58.412,6.971],[60.32,6.971],[62.654,8.188],[65.958,8.188],[69.285,6.813]],[[72.498,7.573],[75.372,7.573],[79.5,8.192],[83.708,7.456],[87.414,8.062],[87.88,8.062],[91.138,8.124],[93.797,8.124],[96.916,6.725]],[[100.251,7.722],[103.327,7.722],[107.362,7.102],[110.045,6.274],[113.033,6.051],[115.44,6.051],[118.21,8.392],[120.727,8.392],[124.061,6.816]],[[127.5,7.649],[131.639,7.649],[136.136,6.965],[139.109,7.751],[142.495,7.93],[143.0,7.93],[148.0,7.93]]]},{"name":"Башня","kind":"Короткая · экстремальная","finish":77,"paths":[[[0.0,8.0],[5.2,8.0],[6.187,6.561],[7.508,6.561],[8.524,4.948],[9.826,4.948],[10.525,3.747],[11.727,3.747],[14.441,6.892],[18.859,7.061],[21.836,7.52],[25.744,7.423],[28.664,8.162],[31.353,7.671],[35.404,7.058],[39.93,6.997],[40.6,6.997],[41.627,5.791],[43.115,5.791],[43.806,4.731],[45.132,4.731],[46.215,3.732],[47.342,3.732],[49.609,6.865],[53.156,6.457],[56.902,6.406],[61.2,6.968],[65.425,6.398],[68.598,6.277],[71.437,5.792],[74.526,5.435],[76.0,5.435],[81.0,5.435]]]},{"name":"Змеиный хребет","kind":"Длинная · экстремальная","finish":194,"paths":[[[0.0,8.0],[5.2,8.0],[6.9,8.34],[13.846,0.665],[15.201,0.665],[18.006,4.587],[19.506,4.587],[23.61,5.296],[28.165,4.777],[31.182,4.799],[34.589,5.147],[37.571,5.605],[41.248,5.274],[42.76,5.274],[44.46,6.024],[49.35,-1.085],[50.502,-1.085],[52.938,1.854],[54.438,1.854],[58.268,1.723],[61.371,2.013],[64.042,2.519],[67.863,1.654],[71.186,2.369],[73.768,2.268],[76.278,2.147],[80.32,2.341],[82.02,2.814],[87.596,-4.921],[89.183,-4.921],[91.403,-1.743],[92.903,-1.743],[96.499,-2.184],[100.558,-2.216],[104.561,-2.507],[108.806,-2.166],[112.42,-3.042],[116.461,-2.511],[117.88,-2.511],[119.58,-1.883],[126.445,-9.869],[127.943,-9.869],[129.938,-7.339],[131.438,-7.339],[135.871,-7.345],[138.986,-6.72],[142.172,-6.708],[146.607,-7.046],[150.108,-7.958],[153.295,-8.795],[155.44,-8.795],[157.14,-7.964],[162.374,-13],[163.919,-13],[165.768,-9.83],[167.268,-9.83],[171.341,-9.782],[174.728,-9.715],[179.161,-8.827],[182.465,-8.652],[186.393,-8.285],[189.067,-9.211],[193.0,-8.697],[198.0,-8.697]]]},{"name":"Шахта","kind":"Техническая · экстремальная","finish":88,"paths":[[[0.0,8.0],[5.2,8.0],[9.019,12.7],[11.077,12.7],[13.312,10.512],[15.18,9.424],[17.127,7.236],[19.313,6.148],[23.86,5.503],[28.44,5.188],[30.992,6.057],[32.467,6.057],[36.582,10.505],[38.729,10.505],[41.335,8.391],[44.068,7.377],[46.01,5.263],[48.353,4.249],[51.737,4.947],[54.429,4.945],[57.176,5.067],[59.733,5.067],[64.142,11.708],[66.476,11.708],[69.222,9.698],[71.347,8.788],[73.941,6.778],[76.279,5.868],[80.301,5.629],[83.053,5.104],[86.528,5.357],[87.0,5.357],[92.0,5.357]]]},{"name":"Пять пиков","kind":"Высотная · очень сложная","finish":148,"paths":[[[0.0,8.0],[5.2,8.0],[7.292,6.091],[8.132,6.091],[9.878,8.515],[12.177,5.142],[12.792,5.142],[14.511,8.937],[16.546,6.872],[17.54,6.872],[19.071,8.744],[22.338,8.885],[26.2,9.203],[30.655,9.052],[34.135,9.388],[38.701,8.767],[40.65,8.767],[42.667,6.641],[43.6,6.641],[45.771,9.305],[48.076,6.171],[48.713,6.171],[51.0,9.567],[53.282,7.341],[54.188,7.341],[56.174,9.371],[59.732,9.448],[62.841,9.708],[66.652,9.504],[69.252,9.461],[72.244,10.022],[76.1,9.44],[78.309,7.22],[79.163,7.22],[80.923,9.195],[82.197,7.159],[83.19,7.159],[85.141,8.982],[87.362,6.25],[88.011,6.25],[89.757,8.679],[93.768,8.381],[97.708,8.896],[101.814,8.432],[106.102,9.382],[109.948,9.96],[111.55,9.96],[113.15,6.832],[113.841,6.832],[115.697,10.012],[118.011,6.59],[118.669,6.59],[120.497,10.272],[122.237,7.912],[122.851,7.912],[124.512,10.696],[127.03,11.246],[129.974,12.065],[133.176,11.591],[137.307,11.678],[141.181,12.308],[143.775,11.432],[147.0,11.432],[152.0,11.432]]]},{"name":"Глубина","kind":"Марафон · экстремальная","finish":305,"paths":[[[0.0,8.0],[5.2,8.0],[9.542,12.7],[11.81,12.7],[13.67,10.612],[16.033,9.624],[18.815,7.536],[20.913,6.548],[23.518,5.732],[27.063,6.012],[31.55,6.954],[34.896,6.801],[38.072,7.729],[41.219,7.843],[44.194,8.358],[47.886,8.116],[52.165,12.7],[54.139,12.7],[56.762,10.52],[58.683,9.44],[60.908,7.26],[63.099,6.18],[66.174,5.777],[70.623,6.272],[73.547,6.81],[77.938,5.86],[81.736,6.622],[84.459,6.377],[88.815,5.657],[90.572,5.657],[94.248,12.7],[96.011,12.7],[98.084,10.648],[100.224,9.696],[102.773,7.644],[105.039,6.692],[108.099,7.48],[112.35,7.329],[115.468,6.833],[118.532,7.276],[121.3,7.972],[125.347,8.174],[129.693,7.588],[132.358,7.592],[133.258,7.592],[137.028,12.7],[138.564,12.7],[141.362,10.309],[144.141,9.018],[146.131,6.627],[148.853,5.336],[153.443,5.779],[156.171,5.081],[159.449,4.406],[163.03,4.468],[166.921,5.146],[170.19,5.896],[173.349,5.3],[175.944,5.3],[180.004,12.7],[182.412,12.7],[184.401,10.327],[186.362,9.054],[189.122,6.681],[191.074,5.408],[195.429,5.959],[199.495,6.878],[203.377,7.762],[207.259,8.689],[211.045,8.123],[215.592,7.552],[218.629,7.552],[222.1,12.7],[223.951,12.7],[225.971,10.636],[227.962,9.672],[230.604,7.608],[232.641,6.644],[236.984,6.285],[240.894,5.704],[244.953,6.361],[248.207,6.491],[252.367,7.015],[255.33,6.498],[258.903,7.132],[261.315,7.132],[264.63,12.7],[266.802,12.7],[269.402,10.166],[271.996,8.732],[274.485,6.198],[277.051,4.764],[281.484,4.4],[284.451,3.663],[287.299,3.771],[290.953,3.787],[295.324,4.442],[299.341,4.823],[303.293,4.324],[304.0,4.324],[309.0,4.324]]]},{"name":"Каскад","kind":"Прыжковая · экстремальная","finish":116,"paths":[[[0.0,8.0],[5.2,8.0],[8.233,7.284],[10.872,7.284],[13.879,5.761]],[[17.378,6.783],[20.468,6.783],[24.905,6.396],[28.573,5.825],[32.65,5.244],[35.944,7.227],[38.732,7.227],[42.079,5.744]],[[45.373,6.884],[48.572,6.884],[52.377,6.011],[56.184,6.86],[59.604,5.914],[60.1,5.914],[62.92,7.201],[66.159,7.201],[69.211,5.756]],[[72.22,6.674],[76.253,6.674],[79.474,6.202],[82.667,6.046],[85.705,5.108],[87.55,5.108],[91.051,7.633],[94.538,7.633],[97.792,6.129]],[[100.838,6.895],[103.724,6.895],[108.063,7.551],[111.456,6.711],[114.184,6.294],[115.0,6.294],[120.0,6.294]]]},{"name":"Серпантин","kind":"Длинная · очень сложная","finish":265,"paths":[[[0.0,8.0],[5.2,8.0],[6.746,10.475],[8.664,10.846],[10.09,10.094],[11.494,8.317],[12.916,5.642],[14.378,4.74],[15.971,6.133],[17.662,7.908],[19.427,9.943],[21.323,11.38],[25.026,12.119],[28.496,12.009],[32.003,11.709],[34.69,12.514],[38.858,12.664],[43.17,13.0],[46.134,12.162],[48.333,12.162],[49.873,13.0],[51.45,13.0],[52.978,13.0],[54.329,12.479],[56.137,9.927],[58.005,9.076],[59.692,10.418],[61.557,12.07],[63.002,13.0],[64.511,13.0],[68.66,13.0],[71.358,13.0],[74.053,12.314],[76.595,13.0],[80.024,13.0],[83.511,13.0],[86.815,12.254],[91.262,12.498],[91.466,12.498],[92.986,13.0],[94.468,13.0],[96.044,13.0],[97.936,12.815],[99.701,10.678],[101.143,9.998],[103.0,11.169],[104.477,12.406],[106.294,13.0],[108.204,13.0],[111.707,12.468],[115.938,11.736],[119.704,11.081],[123.675,11.576],[127.647,11.917],[131.718,12.441],[134.599,12.441],[136.359,13.0],[138.268,13.0],[139.734,13.0],[141.603,12.758],[143.429,10.067],[145.408,9.158],[146.736,10.558],[148.223,12.349],[149.77,13.0],[151.301,13.0],[154.118,13.0],[157.078,13.0],[161.58,12.655],[164.815,11.982],[168.4,11.9],[171.079,11.6],[173.918,11.023],[177.733,11.717],[179.053,13.0],[180.847,13.0],[182.5,12.871],[183.897,12.034],[185.662,10.3],[187.553,9.787],[189.195,10.791],[190.774,11.625],[192.135,12.72],[193.691,13.0],[198.197,13.0],[202.134,12.199],[204.764,11.454],[207.937,11.863],[211.202,12.811],[215.437,12.406],[219.163,13.0],[220.867,13.0],[222.847,13.0],[224.396,13.0],[226.36,13.0],[228.209,13.0],[230.164,11.418],[231.487,10.837],[233.25,11.909],[234.693,12.908],[236.461,13.0],[238.067,13.0],[240.693,12.98],[244.988,13.0],[248.699,12.167],[252.497,11.431],[255.996,11.056],[258.952,11.192],[262.452,10.475],[264.0,10.475],[269.0,10.475]]]},{"name":"Лезвие","kind":"Спринт · почти невозможная","finish":39,"paths":[[[0.0,8.0],[5.2,8.0],[6.107,6.939],[6.92,6.939],[7.885,5.603],[8.74,5.603],[9.755,4.063],[10.623,4.063],[13.517,6.503],[16.142,6.305],[20.477,6.06],[23.092,6.477],[27.634,6.833],[31.567,5.951],[34.104,6.9],[36.94,7.655],[38.0,7.655],[43.0,7.655]]]},{"name":"Испытание титана","kind":"Марафон · экстремальная","finish":345,"paths":[[[0.0,8.0],[5.2,8.0],[7.236,6.311],[8.082,6.311],[9.641,8.389],[11.404,5.56],[12.435,5.56],[14.414,8.104],[16.214,6.048],[17.239,6.048],[19.075,8.187],[22.019,8.54],[25.491,7.644],[29.984,7.271],[34.487,6.465],[37.645,7.18],[41.715,6.372],[44.512,5.818],[47.55,5.818],[49.867,3.727],[50.817,3.727],[52.358,5.519],[54.346,2.676],[55.338,2.676],[56.753,5.249],[58.021,2.534],[58.934,2.534],[61.192,5.759],[64.923,4.84],[68.184,4.532],[71.025,3.873],[75.618,3.049],[79.582,2.9],[82.623,3.313],[85.257,4.033],[88.857,4.349],[89.9,4.349],[92.225,1.016],[93.267,1.016],[95.11,4.148],[97.41,1.662],[98.247,1.662],[100.338,3.772],[101.703,0.969],[102.554,0.969],[104.621,3.795],[107.329,3.859],[110.005,3.72],[113.788,2.944],[116.44,2.652],[120.52,2.293],[124.293,2.003],[127.658,2.523],[131.557,2.718],[132.25,2.718],[134.643,-0.349],[135.579,-0.349],[137.208,2.613],[138.505,0.425],[139.483,0.425],[140.924,2.983],[143.069,1.334],[144.062,1.334],[145.952,3.019],[150.256,2.639],[154.645,2.044],[157.495,2.044],[161.761,2.247],[165.859,1.926],[168.63,1.906],[173.01,2.336],[174.6,2.336],[176.682,-0.373],[177.603,-0.373],[179.416,2.991],[181.73,0.424],[182.518,0.424],[184.169,2.686],[185.825,-0.611],[186.621,-0.611],[188.875,2.425],[193.458,1.979],[197.05,2.074],[201.427,2.98],[205.663,3.783],[209.613,4.476],[213.629,4.243],[216.95,4.243],[218.377,2.432],[219.401,2.432],[221.146,4.9],[223.309,2.333],[224.081,2.333],[225.739,4.837],[228.089,1.981],[228.97,1.981],[230.634,4.993],[233.702,5.801],[236.26,5.178],[240.027,5.841],[243.333,5.642],[246.355,5.195],[250.74,5.049],[254.76,5.61],[257.872,5.861],[259.3,5.861],[261.259,3.039],[261.941,3.039],[263.541,5.824],[265.392,3.038],[266.318,3.038],[268.541,6.216],[270.606,3.897],[271.239,3.897],[273.509,6.427],[276.91,5.643],[279.475,4.884],[282.666,4.942],[285.531,5.011],[288.43,5.542],[291.635,5.323],[295.727,5.786],[299.177,5.995],[301.65,5.995],[303.131,3.69],[303.825,3.69],[305.643,6.304],[307.165,4.902],[308.149,4.902],[309.919,6.412],[311.868,3.702],[312.822,3.702],[314.702,6.848],[318.747,6.539],[322.873,6.047],[327.408,5.57],[331.003,6.519],[333.892,6.666],[338.062,7.11],[341.647,7.104],[344.0,7.104],[349.0,7.104]]]},{"name":"Последний предел","kind":"Гранд-марафон · экстремальная","finish":410,"paths":[[[0.0,8.0],[5.2,8.0],[6.9,8.52],[11.126,2.306],[12.424,2.306],[15.095,5.289],[16.595,5.289],[20.294,4.635],[23.882,5.173],[28.236,4.842],[31.56,4.07],[34.755,3.144],[38.906,3.057],[42.358,3.481],[45.58,3.481],[49.884,10.763],[51.427,10.763],[54.158,8.447],[56.011,7.231],[58.648,4.915],[61.232,3.699],[65.803,2.929],[69.597,2.382],[73.686,2.227],[78.054,1.916],[82.51,2.009],[85.96,2.899],[88.297,1.384],[88.945,1.384],[90.672,3.494],[92.944,1.754],[93.993,1.754],[96.265,3.289],[98.47,1.58],[99.334,1.58],[101.579,3.293],[104.593,3.41],[108.16,3.822],[111.779,3.831],[114.395,3.508],[118.418,3.099],[120.999,2.187],[123.702,1.355],[126.34,1.355],[128.878,7.381],[132.311,7.381],[135.544,5.694]],[[138.301,6.806],[141.995,6.806],[145.499,6.925],[148.223,7.005],[151.004,7.32],[154.759,7.62],[159.254,7.953],[163.56,8.151],[166.72,8.151],[168.146,10.384],[170.086,10.655],[171.635,10.003],[173.324,8.468],[175.19,6.035],[176.872,5.233],[178.701,6.526],[180.508,8.059],[182.419,9.853],[184.024,11.189],[188.398,10.735],[192.473,11.27],[195.709,10.562],[198.399,10.397],[201.64,10.868],[206.004,11.274],[207.1,11.274],[208.118,9.406],[209.668,9.406],[210.433,8.321],[211.403,8.321],[212.085,6.87],[213.165,6.87],[215.272,8.993],[219.624,8.738],[222.721,9.568],[226.109,8.636],[228.629,9.166],[231.312,8.454],[234.216,7.595],[238.427,8.287],[243.019,8.964],[246.174,8.917],[247.48,8.917],[249.18,9.675],[253.538,4.394],[255.123,4.394],[257.781,8.658],[259.281,8.658],[263.365,9.091],[266.596,9.87],[269.92,8.968],[274.494,8.871],[278.349,8.264],[282.237,8.235],[285.874,8.61],[287.86,8.61],[291.493,12.7],[293.586,12.7],[296.056,10.303],[298.779,9.006],[301.321,6.609],[303.205,5.312],[305.925,5.386],[309.636,5.548],[312.799,5.771],[315.46,5.577],[319.247,5.879],[322.439,6.075],[325.857,6.507],[328.24,6.507],[329.944,3.815],[330.555,3.815],[332.315,6.274],[333.7,3.378],[334.443,3.378],[336.442,6.905],[338.456,4.403],[339.511,4.403],[341.08,6.761],[343.87,6.704],[348.343,6.474],[351.604,6.608],[355.03,6.075],[358.965,6.541],[361.907,5.651],[365.882,5.282],[368.62,5.282],[372.18,7.476],[375.618,7.476],[378.748,5.856]],[[381.488,6.677],[384.621,6.677],[387.638,5.794],[390.243,5.719],[394.2,6.423],[398.088,5.769],[400.902,6.462],[403.441,7.156],[406.992,6.644],[409.0,6.644],[414.0,6.644]]]}
+];
+let levelIndex=0;let current=LEVELS[levelIndex];
+LEVELS.forEach(level=>{level.maxTerrainY=Math.max(...level.paths.flat().map(point=>point[1]));});
+function chooseLevel(i){levelIndex=i;current=LEVELS[i];renderLevels();}
+function renderLevels(){const root=q('levels');root.innerHTML='';LEVELS.forEach((level,i)=>{const b=document.createElement('button');b.className='levelbtn'+(i===levelIndex?' chosen':'');b.textContent=(i+1)+'. '+level.name;const info=document.createElement('small');info.textContent=level.kind;b.append(info);b.addEventListener('click',()=>{chooseLevel(i);q('message').textContent=`Уровень ${i+1}/30: ${level.name}. ${level.kind}. Выбери «ПОЕХАЛИ», чтобы испытать трассу.`;});root.append(b);});}
+renderLevels();
+let ratio=1,view={w:0,h:0},pixel=43;
+function size(){
+ const w=Math.max(1,Math.round(document.documentElement.clientWidth||window.innerWidth));
+ const h=Math.max(1,Math.round(window.innerHeight));
+ if(w===view.w&&h===view.h)return;
+ view.w=w;view.h=h;ratio=Math.min(devicePixelRatio||1,2);
+ cv.width=Math.round(w*ratio);cv.height=Math.round(h*ratio);
+ cv.style.width=w+'px';cv.style.height=h+'px';
+ pixel=Math.max(28,Math.min(52,w/18));
+}
+let resizeTicket=0;
+function syncOrientation(){
+ // Safari reports transient dimensions while rotating. Read the stable
+ // viewport on the next animation frame and again after its animations.
+ cancelAnimationFrame(resizeTicket);
+ resizeTicket=requestAnimationFrame(()=>{size();requestAnimationFrame(size);});
+ for(const delay of [120,350,700])setTimeout(size,delay);
+ if(typeof releaseControls==='function')releaseControls();
+}
+addEventListener('resize',syncOrientation);
+addEventListener('orientationchange',syncOrientation);
+if(window.visualViewport)window.visualViewport.addEventListener('resize',syncOrientation);
+size();
+function error(message){q('error').textContent=message;q('play').disabled=true;q('play').textContent='Не удалось загрузить';q('panelwrap').hidden=false;}
+if(!P||!P.World||!P.WheelJoint){error('Библиотека Box2D/Planck.js не загрузилась. Проверь подключение к интернету и перезагрузи страницу.');return;}
+function init(){
+ world=new P.World({gravity:Vec(0,12)});terrain=[];won=false;dead=false;elapsed=0;
+ const ground=world.createBody();
+ for(const path of current.paths){for(let i=1;i<path.length;i++){
+  const a=path[i-1],b=path[i];ground.createFixture(P.Edge(Vec(...a),Vec(...b)),{friction:1.25,restitution:0});terrain.push([a,b]);
+ }}
+ // Frame mass, geometry, and wheels are Box2D rigid bodies. Negative collision
+ // group prevents frame and wheels from accidentally colliding with each other.
+ const START_X=1.95, START_Y=7.03;
+ frame=world.createDynamicBody({position:Vec(START_X,START_Y-0.48),angularDamping:1.65,linearDamping:0.12,allowSleep:false});
+ frame.createFixture(P.Box(.84,.19,Vec(0,-.045),0),{density:4,friction:.5,filterGroupIndex:-1});
+ frame.createFixture(P.Box(.30,.16,Vec(-.12,-.27),0),{density:2,filterGroupIndex:-1});
+ headFixture=frame.createFixture(P.Circle(Vec(.10,-.94),.19),{isSensor:true,filterGroupIndex:-1});
+ // Wheelbase 1.48m, both wheels physically spin. y positive points down.
+ const axleY=START_Y-.07,rx=START_X-.74,fx=START_X+.74;
+ rear=world.createDynamicBody({position:Vec(rx,axleY),angularDamping:.15,allowSleep:false});
+ front=world.createDynamicBody({position:Vec(fx,axleY),angularDamping:.15,allowSleep:false});
+ const wheelFixture={density:1.45,friction:2.1,restitution:0,filterGroupIndex:-1};
+ rear.createFixture(P.Circle(.34),wheelFixture);front.createFixture(P.Circle(.34),wheelFixture);
+ const axis=Vec(0,1);
+ rearJoint=world.createJoint(P.WheelJoint({frequencyHz:5.6,dampingRatio:.73,enableMotor:false,maxMotorTorque:48},frame,rear,Vec(rx,axleY),axis));
+ frontJoint=world.createJoint(P.WheelJoint({frequencyHz:5.6,dampingRatio:.73,enableMotor:false,maxMotorTorque:35},frame,front,Vec(fx,axleY),axis));
+ // Head is a sensor. Detecting the head hitting terrain counts as a crash.
+ world.on('begin-contact',c=>{if(!playing)return;const a=c.getFixtureA(),b=c.getFixtureB();if((a===headFixture||b===headFixture)&&(!a.isSensor()||!b.isSensor()))queuedCrash='Удар шлемом';});
+ camera={x:0,y:0};throttleHold=0;updateHUD();
+}
+function safeSetMotor(j,on,speed,torque){j.enableMotor(on);if(on){j.setMotorSpeed(speed);j.setMaxMotorTorque(torque);}}
+function controls(){
+ if(pressed.gas && !pressed.rearBrake){throttleHold=Math.min(.55,throttleHold+1/60);}
+ else throttleHold=0;
+ // Rear wheel motor is the ONLY engine. Front wheel is always freely rolling
+ // unless its brake is applied. No force is added to chassis velocity.
+ if(pressed.rearBrake)safeSetMotor(rearJoint,true,0,65);
+ else if(pressed.gas){
+  // Less aggressive initial launch: 18% less motor torque at first touch,
+  // gradually restores baseline torque in 0.55 s. Top speed unchanged.
+  const launchFactor=.82+.18*Math.min(1,throttleHold/.55);
+  safeSetMotor(rearJoint,true,24,48*launchFactor);
+ }
+ else safeSetMotor(rearJoint,false,0,0);
+ if(pressed.frontBrake)safeSetMotor(frontJoint,true,0,72);
+ else safeSetMotor(frontJoint,false,0,0);
+ const lean=(pressed.forward?1:0)-(pressed.back?1:0);
+ if(lean){frame.applyTorque(lean*(lean<0?16.2:18),true);} // nose-up is 10% gentler
+}
+function releaseControls(){
+ Object.keys(pressed).forEach(k=>setControl(k,false));
+ for(const el of document.querySelectorAll('[data-k]'))el.classList.remove('active');
+}
+function enterMenu(title,message,button){
+ playing=false;releaseControls();document.body.classList.remove('in-game');
+ q('title').textContent=title;q('message').textContent=message;
+ q('play').textContent=button;q('panelwrap').hidden=false;
+}
+let queuedCrash='';
+function die(msg){if(dead||won)return;dead=true;enterMenu('ПАДЕНИЕ',msg+' — попробуй ещё раз','ПОВТОРИТЬ');}
+function show(title,message,button){enterMenu(title,message,button);}
+function start(){
+ playing=false;releaseControls();queuedCrash='';acc=0;
+ // A fresh Planck.World is created on every retry; no old contacts/joints remain.
+ init();last=performance.now();playing=true;
+ document.body.classList.add('in-game');q('panelwrap').hidden=true;
+}
+q('play').disabled=false;q('play').textContent='ПОЕХАЛИ!';q('play').addEventListener('click',start);
+q('restart').addEventListener('click',start);
+q('menu').addEventListener('click',()=>show('RIDGE RUSH 2.7','Выбери одну из 30 трасс.','ИГРАТЬ'));
+function setControl(k,v){pressed[k]=v;for(const el of document.querySelectorAll('[data-k="'+k+'"]'))el.classList.toggle('active',v);}
+addEventListener('keydown',e=>{const k=keyMap[e.code];if(k){e.preventDefault();setControl(k,true);}else if(e.code==='KeyR'){e.preventDefault();start();}else if(e.code==='Escape'){playing=false;show('ПАУЗА','Продолжить можно новым заездом.','НАЧАТЬ ЗАНОВО');}});
+addEventListener('keyup',e=>{const k=keyMap[e.code];if(k){e.preventDefault();setControl(k,false);}});
+addEventListener('blur',()=>{Object.keys(pressed).forEach(k=>setControl(k,false));});
+// Prevent native selection and long-press callouts across the entire game.
+// This does not cancel button click/pointer events or level-menu scrolling.
+document.addEventListener('selectstart', e => { if (e.cancelable) e.preventDefault(); }, {passive:false});
+document.addEventListener('contextmenu', e => { if (e.cancelable) e.preventDefault(); }, {passive:false});
+document.addEventListener('dragstart', e => { if (e.cancelable) e.preventDefault(); }, {passive:false});
+// iOS Safari: prevent pinch zoom and double-tap zoom on ALL gameplay surfaces.
+// UI click actions (start/restart/menu) remain usable.
+for(const eventName of ['gesturestart','gesturechange','gestureend']){
+ document.addEventListener(eventName,e=>{if(e.cancelable)e.preventDefault();},{passive:false});
+}
+// touch-action:none disables double-tap zoom on the playable surface.
+// Do not suppress touchend globally: it can swallow iOS button clicks.
+document.addEventListener('touchmove',e=>{
+ if(playing && e.cancelable)e.preventDefault();
+},{passive:false});
+// Suppress the iOS long-press native callout during gameplay.
+document.addEventListener('contextmenu',e=>{if(document.body.classList.contains('in-game'))e.preventDefault();});
+// Prevent Safari's double-tap smart-zoom on any gameplay area.
+document.addEventListener('dblclick',e=>{if(playing&&e.cancelable)e.preventDefault();},{passive:false});
+document.addEventListener('touchstart',e=>{if(playing&&e.touches.length>1&&e.cancelable)e.preventDefault();},{passive:false});
+for(const el of document.querySelectorAll('[data-k]')){
+ const k=el.dataset.k;
+ el.addEventListener('pointerdown',e=>{e.preventDefault();try{el.setPointerCapture(e.pointerId);}catch(_){}setControl(k,true);});
+ for(const ev of ['pointerup','pointercancel','lostpointercapture'])el.addEventListener(ev,e=>{e.preventDefault();setControl(k,false);});
+}
+// iOS WebKit can still begin native selection on rapid repeated taps despite CSS.
+// Prevent touch defaults on gameplay controls only; pointer events above remain the input source.
+const touchControls=q('controls');
+for(const type of ['touchstart','touchmove','touchend','touchcancel']){
+ touchControls.addEventListener(type,e=>{if(e.cancelable)e.preventDefault();},{passive:false,capture:true});
+}
+document.addEventListener('selectionchange',()=>{
+ const selection=window.getSelection&&window.getSelection();
+ if(selection&&selection.rangeCount)selection.removeAllRanges();
+});
+for(const el of document.querySelectorAll('#controls button')){
+ el.addEventListener('pointerdown',()=>{try{el.blur();}catch(_){};});
+}
+// Every button has an independent pointer; no swipe-to-brake shortcuts.
+// Multiple simultaneous pointers are supported by pointer capture on each key.
+function orientationHint(){q('orient').hidden=!(matchMedia('(orientation:portrait) and (max-width:700px)').matches);}
+addEventListener('resize',orientationHint);orientationHint();
+function updateHUD(){q('time').textContent=`${String(Math.floor(elapsed/60)).padStart(2,'0')}:${String(Math.floor(elapsed%60)).padStart(2,'0')}.${Math.floor(elapsed*10)%10}`;
+ q('dist').textContent=Math.max(0,Math.floor((frame?.getPosition().x||2)-2))+' м';
+ q('speed').textContent=Math.round(Math.max(0,frame?.getLinearVelocity().x||0)*3.6)+' км/ч';
+ q('fill').style.width=Math.min(100,Math.max(0,((frame?.getPosition().x||2)-2)/(current.finish-2)*100))+'%';}
+function draw(){g.setTransform(ratio,0,0,ratio,0,0);const W=view.w,H=view.h;g.clearRect(0,0,W,H);
+ const sky=g.createLinearGradient(0,0,0,H);sky.addColorStop(0,'#18334c');sky.addColorStop(1,'#8fb4c1');g.fillStyle=sky;g.fillRect(0,0,W,H);
+ if(!frame)return;
+ const f=frame.getPosition(),targetX=f.x-Math.min(5,W/pixel*.33),targetY=f.y-H/pixel*.46;
+ camera.x+=(targetX-camera.x)*.09;camera.y+=(targetY-camera.y)*.065;
+ const sx=x=>(x-camera.x)*pixel,sy=y=>(y-camera.y)*pixel;
+ // distant hills
+ for(let layer=0;layer<2;layer++){
+  g.beginPath();g.moveTo(0,H);for(let x=0;x<=W+15;x+=15){let wx=(x/pixel+camera.x)*(layer?.32:.13);let y=H*.58+Math.sin(wx*.42+layer)*27+Math.sin(wx*.2)*45+layer*55;g.lineTo(x,y);}g.lineTo(W,H);g.closePath();g.fillStyle=layer?'#547f86':'#7399a1';g.fill();}
+ // Visible terrain segments: each is the actual edge used by Box2D.
+ for(const [a,b] of terrain){const x1=sx(a[0]),x2=sx(b[0]),y1=sy(a[1]),y2=sy(b[1]);if(Math.min(x1,x2)>W+70||Math.max(x1,x2)<-70)continue;
+  g.strokeStyle='#2d544a';g.lineWidth=13;g.lineCap='round';g.beginPath();g.moveTo(x1,y1);g.lineTo(x2,y2);g.stroke();
+  g.strokeStyle='#bbd28b';g.lineWidth=5;g.beginPath();g.moveTo(x1,y1-2);g.lineTo(x2,y2-2);g.stroke();
+ }
+ const fx=sx(current.finish),fy=sy(current.paths[current.paths.length-1].at(-1)[1]);g.strokeStyle='#fff';g.lineWidth=3;g.beginPath();g.moveTo(fx,fy);g.lineTo(fx,fy-90);g.stroke();
+ for(let i=0;i<3;i++)for(let j=0;j<4;j++){g.fillStyle=(i+j)%2?'#222':'#eee';g.fillRect(fx+j*9,fy-90+i*9,9,9);}
+ function wheel(body){const p=body.getPosition(),x=sx(p.x),y=sy(p.y),r=.34*pixel;
+  g.fillStyle='#121e2b';g.beginPath();g.arc(x,y,r,0,Math.PI*2);g.fill();g.fillStyle='#596d77';g.beginPath();g.arc(x,y,r*.68,0,Math.PI*2);g.fill();g.strokeStyle='#dae3e7';g.lineWidth=2;
+  for(let k=0;k<5;k++){const ang=body.getAngle()+k*Math.PI*2/5;g.beginPath();g.moveTo(x,y);g.lineTo(x+Math.cos(ang)*r*.61,y+Math.sin(ang)*r*.61);g.stroke();}g.fillStyle='#0d2434';g.beginPath();g.arc(x,y,4,0,Math.PI*2);g.fill();}
+ const rp=rear.getPosition(),fp=front.getPosition();
+ const xR=sx(rp.x),yR=sy(rp.y),xF=sx(fp.x),yF=sy(fp.y);
+ const cx=sx(f.x),cy=sy(f.y),a=frame.getAngle();
+ g.save();g.translate(cx,cy);g.rotate(a);g.strokeStyle='#ffb35b';g.lineWidth=5;g.lineJoin='round';g.lineCap='round';g.beginPath();g.moveTo(-.75*pixel,.38*pixel);g.lineTo(-.24*pixel,-.13*pixel);g.lineTo(.34*pixel,.37*pixel);g.lineTo(-.75*pixel,.38*pixel);g.lineTo(.58*pixel,-.20*pixel);g.stroke();
+ g.fillStyle='#ff7b4f';g.fillRect(-.43*pixel,-.35*pixel,.60*pixel,.18*pixel);
+ // rider stylized, rigid with chassis: head sensor roughly matches helmet
+ g.strokeStyle='#243447';g.lineWidth=9;g.beginPath();g.moveTo(.12*pixel,-.27*pixel);g.lineTo(.10*pixel,-.67*pixel);g.stroke();
+ g.fillStyle='#ffd371';g.beginPath();g.arc(.10*pixel,-.94*pixel,.19*pixel,0,Math.PI*2);g.fill();
+ g.restore();
+ g.strokeStyle='#f8d27f';g.lineWidth=3;g.beginPath();g.moveTo(xR,yR);g.lineTo(cx-.62*pixel,cy);g.moveTo(xF,yF);g.lineTo(cx+.62*pixel,cy);g.stroke();
+ wheel(rear);wheel(front);
+}
+let last=performance.now(),acc=0;
+function loop(now){requestAnimationFrame(loop);let delta=Math.min(.05,(now-last)/1000||0);last=now;
+ if(playing){acc=Math.min(2/60,acc+delta);while(acc>=1/60){controls();world.step(1/60,8,3);elapsed+=1/60;acc-=1/60;
+  if(queuedCrash){die(queuedCrash);queuedCrash='';break;}
+  if(frame.getPosition().y>Math.max(16,current.maxTerrainY+6)){die('Улетел с трассы');break;}
+  if(frame.getPosition().x>current.finish){won=true;playing=false;show('🏁 ФИНИШ!',`Трасса «${current.name}». Время: ${elapsed.toFixed(1)} с. Выбери следующую трассу или повтори попытку.`,'ИГРАТЬ ЕЩЁ');break;}
+  // Rider pitched far past normal control range: fall rather than self-righting.
+  const angle=frame.getAngle();if(Math.abs(angle)>2.9&&Math.abs(frame.getAngularVelocity())>1.5){die('Переворот');break;}
+ }updateHUD();}
+ draw();}
+init();requestAnimationFrame(loop);
+})();
+</script></body></html>
